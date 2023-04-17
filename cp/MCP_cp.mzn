@@ -50,7 +50,8 @@ set of int: DISTANCE_OF_COURIER = 2*sum([D[i,length(s)] | i in DISTANCES]);
 % this is the worst distance that the courier could do, because he delivers a package and then goes home, he takes another package and he delivers it...
 array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours; 
 constraint forall(i in NUMBER_OF_COURIERS)(
-  distances_of_tours[i] = sum([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])
+  % distances_of_tours[i] = sum([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])
+  sum([D[courier_tour[i,j]][courier_tour[j,k]] | j in NUMBER_OF_COURIERS k in NUMBER_OF_COURIERS where courier_tour[i,j]!=0, courier_tour[j,k]!=0])
 )
 
 [courier_tour[i] | if courier_tour[i]!=0]

@@ -7,14 +7,42 @@ array[NUMBER_OF_PACKAGES] of int: s; % Weights
 int: n = 7;
 int: m = 3;
 
-function var int: manhattan(array[NUM] of var int: x) =
-         %x[0];
-         sum([D[i][i+1] | i in 1..length(x)]);
-%          forall(i in x)(
-%           sum(D[i][i+1])
-%          )
+% function array[int] of int: rimuovi_zeri(array_input) =
+% function array[int] of int: rimuovi_zeri(array_input) =
+%   let {
+%     % Determina la lunghezza dell'array di input
+%     int: n = length(array_input);
+
+%     % Filtra l'array originale per rimuovere gli zeri
+%     array[1..count(i in 1..n)(array_input[i] != 0)] of int: array_filtrato =
+%       [array_input[i] | i in 1..n where array_input[i] != 0];
+%   } in
+%     % Ritorna l'array filtrato
+%     array_filtrato;
+
+% function set of (int,int): array_to_parset(array[int] of int: a) =
+%   set { i -> a[i] | i in index_set(a) };
+
+function var int: manhattan(array[NUMBER_OF_PACKAGES] of var int: x) =
+    let{
+    array[1..count(i in 1..n)(array_input[i] != 0)] of int: array_filtrato =
+      [length(x)+1] ++ [x[i] | i in 1..n where x[i] != 0] ++ [length(x)+1];
+    }
+    in
+    sum ([D[array_filtrato[i], array_filtrato[i+1]] | i in 1..length(array_filtrato)]);
+
+
+% Definisci un array di interi
+array[1..n] of int: array_input = [0, 5, 0, 3, 0, 1];
+
+% Determina la lunghezza dell'array di input
+int: lengtharray = length(array_input);
+
+% Filtra l'array originale per rimuovere gli zeri
+array[1..count(i in 1..lengtharray)(array_input[i] != 0)] of int: array_filtrato =
+  [array_input[i] | i in 1..lengtharray where array_input[i] != 0];
        
-array[NUMBER_OF_PACKAGES] of int: aaa = [1,4,7];  
+array[NUMBER_OF_PACKAGES] of int: aaa = [1,0,0,4,7,0,0];  
          
 set of int: DISTANCES = 1..n+1;
 array[DISTANCES, DISTANCES] of int: D;
@@ -28,5 +56,5 @@ D =
 |6, 7, 5, 6, 3, 2, 0, 4
 |2, 3, 3, 4, 3, 4, 4, 0|];
          
-output[ manhattan
+output[ show(manhattan(aaa))
 ]
