@@ -10,24 +10,28 @@ set of int: NUMBER_OF_PACKAGES = 1..n;
 array[NUMBER_OF_PACKAGES] of int: s; % Weights
 
 set of int: DISTANCES = 1..n+1;
-array[DISTANCES, DISTANCES] of int: D;
+array[DISTANCES, DISTANCES] of int: D; % Distances
 
-% variables
+% Domains
 set of int: TOUR_DOMAIN = 1..n+1; 
 set of int: TOUR_SIZE = 1..n+2;
 set of int: CHECK_HOME = 2..n+1;
 
+% Variables
 array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 % in each row there is the path of the courier
 % [
 % 	8 1 8 8
 % 	8 2 8 8
 % ]
-% constraint alldifferent([array1d(tours)[i] | i in TOUR_SIZE where array1d(tours)[i] != n+1]);
-constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
+
+% Constraints
+% each item must be present only one time
+% constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
 constraint forall(i in NUMBER_OF_COURIERS)(
   tours[i,1] = n+1 % each courier start from the home
 );
+
 % each item must be in the matrix
 % constraint forall(e in NUMBER_OF_PACKAGES)(
 % %   has_element(i, tours)
@@ -52,9 +56,13 @@ constraint forall(i in NUMBER_OF_COURIERS)(
   sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
 );
 
-constraint forall(e in NUMBER_OF_PACKAGES)(
-  sum([tours[i,j] | i in NUMBER_OF_COURIERS, j in CHECK_HOME where tours[i,j] == e]) > 0
-);
+% constraint forall(e in NUMBER_OF_PACKAGES)(
+%   sum([tours[i,j] | i in NUMBER_OF_COURIERS, j in CHECK_HOME where tours[i,j] == e]) > 0
+% );
+% constraint on the numbers in the matrix:
+% each item must be present only one time
+% each "home" must be present (n+2)*m-2 times
+constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n], [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n]);
 
 
 % compute the distances
