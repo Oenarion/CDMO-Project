@@ -44,10 +44,11 @@ constraint forall(i in NUMBER_OF_COURIERS)(
 % if there is the home, then all the number after it must be n+1, because he have terminated the journey
 constraint forall(i in NUMBER_OF_COURIERS)(
   forall(j in CHECK_HOME)(
-       if tours[i,j] == n+1
-       then tours[i,j+1] = n+1
-       else true
-       endif
+%        if tours[i,j] == n+1
+%        then tours[i,j+1] = n+1
+%        else true
+%        endif
+    tours[i,j] == n+1 -> tours[i,j+1] = n+1
    )
 );
 
