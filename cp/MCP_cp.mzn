@@ -10,78 +10,85 @@ set of int: NUMBER_OF_PACKAGES = 1..n;
 array[NUMBER_OF_PACKAGES] of int: s; % Weights
 
 set of int: DISTANCES = 1..n+1;
-array[DISTANCES, DISTANCES] of int: D;
+array[DISTANCES, DISTANCES] of int: D; % Distances
+
+% Domains
+set of int: TOUR_DOMAIN = 1..n+1; 
+set of int: TOUR_SIZE = 1..n+2;
+set of int: CHECK_HOME = 2..n+1;
 
 % Variables
-% array of the size of the packages for which each element is assigned to the courier 
-array[NUMBER_OF_PACKAGES] of var NUMBER_OF_COURIERS: assignment_of_packages; 
+array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
+% in each row there is the path of the courier
+% [
+% 	8 1 8 8
+% 	8 2 8 8
+% ]
 
-% constarint on the size of the truck
-constraint forall(i in NUMBER_OF_COURIERS) ( % for all couriers
-   sum([s[j] | j in NUMBER_OF_PACKAGES where assignment_of_packages[j] == i]) <= l[i] 
+% Constraints
+% each item must be present only one time
+% constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
+
+constraint forall(i in NUMBER_OF_COURIERS)(
+  tours[i,1] = n+1 % each courier start from the home
 );
 
 
-% matrix where each row represent the packages that a courier will deliver
-% if a courier don't deliver an item then I will have a zero in that position
-set of int: PLACE = 0..n; 
-array[NUMBER_OF_COURIERS, NUMBER_OF_PACKAGES] of var PLACE: courier_tour;
-
-constraint forall(i in NUMBER_OF_COURIERS) (
-   forall(j in NUMBER_OF_PACKAGES) (
-      if assignment_of_packages[j] == i 
-        then courier_tour[i,j] = j %assignment_of_packages[j]
-      else courier_tour[i,j] = 0
-      endif
+% if there is the home, then all the number after it must be n+1, because he have terminated the journey
+constraint forall(i in NUMBER_OF_COURIERS)(
+  forall(j in CHECK_HOME)(
+    tours[i,j] == n+1 -> tours[i,j+1] = n+1
    )
 );
 
-
-
-% compute the distances
-set of int: DISTANCE_OF_COURIER = 0..2*sum([D[i,length(s)] | i in DISTANCES]); 
-% this is the worst distance that the courier could do, because he delivers a package and then goes home, he takes another package and he delivers it...
-array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours; 
-
+%constraint on the size of the truck
 constraint forall(i in NUMBER_OF_COURIERS)(
-  % the distance of the i-th courier is equal to the sum of the D[i,j]
-  % the D[i,j] are obtained using the courier_tour matrix without the zeros
-  % the indexes of D are obtained using courier_tour_no_zero[i, k] and courier_tour_no_zero[i, k+1] such that is used the distance between the item k and the item k+1 that the courier will deliver
-  distances_of_tours[i] = sum([
-    D[[courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k],
-    [courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k+1]]
-    | k in 1..length([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])-1
-    ])
+  sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
 );
 
 
-% let {distances_of_tours = [sum([ D[[courier_tour[i,j] | j in NOP where courier_tour[i, j]!=0][k], [courier_tour[i,j] | j in NOP where courier_tour[i, j]!=0][k+1]] | k in 1…length([courier_tour[i,j] | j in NOP where courier_tour[i, j]!=0])-1 ]) | i in NOC]} in output[show(distances_of_tours)];
+% constraint on the numbers in the matrix:
+% each item must be present only one time
+% each "home" must be present (n+2)*m-2 times
+constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n], [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n]);
+%[1,2,3,4,..,11] tour_domain
+%[1,1,1,1,..,50] lower bound of each value
+%[1,1,1,1,..,50] upper bound of each value
 
-% let {array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours = [sum([ D[[courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k], [courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k+1]] | k in 1..length([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])-1 ]) | i in NUMBER_OF_COURIERS]} 
-% in distances_of_tours
 
-%solve minimize sum([distances_of_tours[i]^2 | i in NUMBER_OF_COURIERS]);
-solve minimize max(distances_of_tours);
+% compute the distances
+set of int: DISTANCE_OF_COURIER = 0..2*sum([D[i,length(s)+1] | i in DISTANCES]);
+% this is the worst distance that the courier could do, because he delivers a package and then goes home, he takes another package and he delivers it...
+array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours;
+constraint forall(i in NUMBER_OF_COURIERS)(
+  distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in TOUR_DOMAIN])
+);
 
 
-% distances_of_tours = [sum([
-%     D[[courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k],
-%     [courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k+1]]
-%     | k in 1..length([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])-1
-%     ]) | i in NUMBER_OF_COURIERS];
+% To achieve a fair division among drivers, each courier must have at least an item (because n>=m)
+constraint forall(i in NUMBER_OF_COURIERS)(
+%   if n>m
+%   then length([tours[i,j] | j in TOUR_SIZE where tours[i,j] != n+1])>0
+%   endif
+  % n>m -> distances_of_tours[i]>0
+  tours[i,2] != n+1 
+);
 
-% ann:search_ann;
-% search_ann = int_search(assignment_of_packages, input_order, indomain_random);
-% solve :: search_ann
-% minimize assignment_of_packages[2];
+constraint forall(i in NUMBER_OF_COURIERS)(
+forall(j in NUMBER_OF_COURIERS)(
+  if j > i /\ l[i] == l[j] 
+  then lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+  endif
+));
 
-output[show(
-[sum([
-    D[[courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k],
-    [courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0][k+1]]
-    | k in 1..length([courier_tour[i,j] | j in NUMBER_OF_PACKAGES where courier_tour[i, j]!=0])-1
-    ]) | i in NUMBER_OF_COURIERS]
-), "\n", 
-show(courier_tour), "\n",
-show(distances_of_tours)
-];
+ann:search_ann;
+% search_ann = int_search(tours, input_order, indomain_min);
+% search_ann = int_search(tours, input_order, indomain_random);
+% search_ann = int_search(tours, first_fail, indomain_min);
+% search_ann = int_search(tours, first_fail, indomain_random);
+% search_ann = int_search(tours, dom_w_deg, indomain_min);
+search_ann = int_search(tours, dom_w_deg, indomain_random);
+
+solve :: search_ann
+minimize max(distances_of_tours) % *10 + sum([distances_of_tours[i]^2 | i in NUMBER_OF_COURIERS]);
+% output[show(sqrt(sum([distances_of_tours[i]^2 | i in NUMBER_OF_COURIERS])))]
