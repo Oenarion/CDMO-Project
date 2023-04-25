@@ -64,7 +64,9 @@ constraint forall(i in NUMBER_OF_COURIERS)(
 % each item must be present only one time
 % each "home" must be present (n+2)*m-2 times
 constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n], [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n]);
-
+%[1,2,3,4,..,11] tour_domain
+%[1,1,1,1,..,50] lower bound of each value
+%[1,1,1,1,..,50] upper bound of each value
 
 % compute the distances
 set of int: DISTANCE_OF_COURIER = 0..2*sum([D[i,length(s)+1] | i in DISTANCES]);
@@ -74,6 +76,28 @@ constraint forall(i in NUMBER_OF_COURIERS)(
   distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in TOUR_DOMAIN])
 );
 
-solve minimize max(distances_of_tours)
-% output[show([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j] == 8][0])]
+% To achieve a fair division among drivers, each courier must have at least an item (because n>=m)
+constraint forall(i in NUMBER_OF_COURIERS)(
+%   if n>m
+%   then length([tours[i,j] | j in TOUR_SIZE where tours[i,j] != n+1])>0
+%   endif
+  % n>m -> distances_of_tours[i]>0
+  tours[i,2] != n+1 
+);
+
+% constraint forall(i, j in NUMBER_OF_COURIERS)(
+%   lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+% );
+
+ann:search_ann;
+% search_ann = int_search(tours, input_order, indomain_min);
+% search_ann = int_search(tours, input_order, indomain_random);
+% search_ann = int_search(tours, first_fail, indomain_min);
+% search_ann = int_search(tours, first_fail, indomain_random);
+% search_ann = int_search(tours, dom_w_deg, indomain_min);
+search_ann = int_search(tours, dom_w_deg, indomain_random);
+
+solve :: search_ann
+minimize max(distances_of_tours) ;
+% output[show(tours[i])]
 
