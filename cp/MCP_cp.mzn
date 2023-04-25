@@ -74,12 +74,13 @@ constraint forall(i in NUMBER_OF_COURIERS)(
   tours[i,2] != n+1 
 );
 
-constraint forall(i in NUMBER_OF_COURIERS)(
-forall(j in NUMBER_OF_COURIERS)(
-  if j > i /\ l[i] == l[j] 
-  then lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
-  endif
-));
+constraint forall(i,j in NUMBER_OF_COURIERS)(
+%forall(j in NUMBER_OF_COURIERS)(
+%   if j > i /\ l[i] == l[j] 
+%   then lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+%   endif
+  j > i /\ l[i] == l[j] -> lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+);
 
 ann:search_ann;
 % search_ann = int_search(tours, input_order, indomain_min);
