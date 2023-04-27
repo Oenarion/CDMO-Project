@@ -24,16 +24,22 @@ set of int: SUM_DOMAIN = 1..lastElement-1;
 array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 % in each row there is the path of the courier
 % [
-% 	8 1 8 8
-% 	8 2 8 8
+% 	3 1 3 3
+% 	3 2 3 3
 % ]
 
 % Constraints
 % each item must be present only one time
 % constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
 
+%constraint on the size of the vehicle
 constraint forall(i in NUMBER_OF_COURIERS)(
-  tours[i,1] = n+1 % each courier start from the home
+  sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
+);
+
+
+constraint forall(i in NUMBER_OF_COURIERS)(
+  tours[i,1] = n+1 % each courier start from the origin point
 );
 
 
@@ -44,10 +50,6 @@ constraint forall(i in NUMBER_OF_COURIERS)(
    )
 );
 
-%constraint on the size of the truck
-constraint forall(i in NUMBER_OF_COURIERS)(
-  sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
-);
 
 
 % constraint on the numbers in the matrix:
