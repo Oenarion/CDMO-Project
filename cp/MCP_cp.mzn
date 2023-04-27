@@ -13,9 +13,12 @@ set of int: DISTANCES = 1..n+1;
 array[DISTANCES, DISTANCES] of int: D; % Distances
 
 % Domains
+int: lastElement = n-m+3; % second dimension of the matrix "tours"
+
 set of int: TOUR_DOMAIN = 1..n+1; 
-set of int: TOUR_SIZE = 1..n+2;
-set of int: CHECK_HOME = 2..n+1;
+set of int: TOUR_SIZE = 1..lastElement;
+set of int: CHECK_HOME = 2..lastElement-1;
+set of int: SUM_DOMAIN = 1..lastElement-1;
 
 % Variables
 array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
@@ -50,7 +53,7 @@ constraint forall(i in NUMBER_OF_COURIERS)(
 % constraint on the numbers in the matrix:
 % each item must be present only one time
 % each "home" must be present (n+2)*m-2 times
-constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n], [1 | i in NUMBER_OF_PACKAGES]++[(n+2)*m-n]);
+constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PACKAGES]++[lastElement*m-n], [1 | i in NUMBER_OF_PACKAGES]++[lastElement*m-n]);
 %[1,2,3,4,..,11] tour_domain
 %[1,1,1,1,..,50] lower bound of each value
 %[1,1,1,1,..,50] upper bound of each value
@@ -61,7 +64,7 @@ set of int: DISTANCE_OF_COURIER = 0..2*sum([D[i,length(s)+1] | i in DISTANCES]);
 % this is the worst distance that the courier could do, because he delivers a package and then goes home, he takes another package and he delivers it...
 array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours;
 constraint forall(i in NUMBER_OF_COURIERS)(
-  distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in TOUR_DOMAIN])
+  distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN])
 );
 
 
