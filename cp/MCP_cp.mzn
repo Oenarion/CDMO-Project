@@ -62,12 +62,16 @@ constraint global_cardinality_low_up(tours, TOUR_DOMAIN, [1 | i in NUMBER_OF_PAC
 
 
 % compute the distances
-set of int: DISTANCE_OF_COURIER = 0..2*sum([D[i,length(s)+1] | i in DISTANCES]);
+set of int: DISTANCE_OF_COURIER = 0..sum([D[i,length(s)+1] | i in DISTANCES]) + sum([D[length(s)+1, i] | i in DISTANCES]);
 % this is the worst distance that the courier could do, because he delivers a package and then goes home, he takes another package and he delivers it...
-array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours;
-constraint forall(i in NUMBER_OF_COURIERS)(
-  distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN])
-);
+
+% array[NUMBER_OF_COURIERS] of var DISTANCE_OF_COURIER: distances_of_tours;
+% constraint forall(i in NUMBER_OF_COURIERS)(
+%   distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN])
+% );
+
+var DISTANCE_OF_COURIER: max_distance_of_tours = max([sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN]) | i in NUMBER_OF_COURIERS]);
+  
 
 
 % To achieve a fair division among drivers, each courier must have at least an item (because n>=m)
@@ -96,5 +100,6 @@ ann:search_ann;
 search_ann = int_search(tours, dom_w_deg, indomain_random);
 
 solve :: search_ann
-minimize max(distances_of_tours) % *10 + sum([distances_of_tours[i]^2 | i in NUMBER_OF_COURIERS]);
-% output[show(sqrt(sum([distances_of_tours[i]^2 | i in NUMBER_OF_COURIERS])))]
+% minimize max(distances_of_tours);
+minimize max_distance_of_tours;
+output[show(tours), "\n", show(max_distance_of_tours)];
