@@ -1,4 +1,3 @@
-import numpy as np
 from z3 import *
 from itertools import *
 import math
@@ -85,6 +84,17 @@ def find(index,tours):
 #constraint 1: each item exactly once
 for i in range(1,n+1): #iterate on 1,2,3...5
     s.add(exactly_one(find(i,tours))) #for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
+
+# constraint if there is the home, then all the number after it must be n+1, because he have terminated the journey
+for i in range(m):
+    for j in range(2, n-m+3-1):
+        tmp = []
+        for k in range(depth_tours): 
+             tmp.append(Not(tours[i][j][k]))
+        tmp2 = []
+        for k in range(depth_tours): 
+             tmp2.append(Not(tours[i][j+1][k]))
+        s.add(Implies(And(tmp), And(tmp2)))
 
 
 print(s.check())

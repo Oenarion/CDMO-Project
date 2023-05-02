@@ -17,7 +17,7 @@ int: lastElement = n-m+3; % second dimension of the matrix "tours"
 
 set of int: TOUR_DOMAIN = 1..n+1; 
 set of int: TOUR_SIZE = 1..lastElement;
-set of int: CHECK_HOME = 2..lastElement-1;
+set of int: CHECK_HOME = 3..lastElement-1;
 set of int: SUM_DOMAIN = 1..lastElement-1;
 
 % Variables
