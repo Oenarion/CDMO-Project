@@ -2,11 +2,49 @@ from z3 import *
 from itertools import *
 import math
 
+def find(index,tours):
+    """
+    per ogni [i][j] di tours, abbiamo una lista k1,k2,k3,...kn
+    questa lista viene messa in AND logico dentro una parentesi (k1 & k2 & k3 ...)
+    ogni k1 .. ha davanti l'operatore logico corrispondente per computare l'elemento index
+    es: index = 2 bin: 0010 (meno significativo a dx)
+    --> cerchiamo un numero (!k1 & !k2 & k3 & !k4)
+    tutte vengono aggiunte alla list[]
+    si controlla che in list sia presente exactly_once(list[])
+    quindi in tutte le i,j combinazioni di tours, solo una deve "accendersi" logicamente con l'index corrispondente
+    """
+
+    list = []
+    enc = bin(index) #codifica in binario di index (1..n) -> 0b10 (esempio per index = 2)
+    index_encoding = enc[2:].rjust(depth_tours, '0') #portiamo con padding depth_tours (ex: 8) -> '00001000'
+
+    #recuperiamo tutti i k elementi di un [i][j]
+    #j in range(n-m+3)] for i in range(m)]
+    for i in range(m):
+        for j in range(n-m+3):
+            #abbiamo tutti i k di depth associati a [i][j]-esimo
+            sub_list = []
+            for k in range(depth_tours):
+                #k0,k1,k2... <--> index_encoding (stessa dimensione)
+                if(index_encoding[k] == '0'):
+                    sub_list.append(Not(tours[i][j][k]))
+                else:
+                    sub_list.append(tours[i][j][k])
+
+            #questa sub_lista deve avere tutti gli elementi in AND logico
+            #successivamente vanno aggiunti alla list[] in OR
+            list.append(And(sub_list))
+
+    return list
+
+
 def at_least_one(bool_vars):
+
     return Or(bool_vars)
 
 def at_most_one(bool_vars):
     return [Not(And(pair[0], pair[1])) for pair in combinations(bool_vars, 2)]
+
 
 def exactly_one(bool_vars):
     return at_most_one(bool_vars) + [at_least_one(bool_vars)]
@@ -44,60 +82,14 @@ items = [[Bool(f"item{i}_{j}") for i in range(n)] for j in range(depth_weight)]
 #items index = {i} index from items list
 #we should add a constraint that says that from all i,j
 
+#def graphic_representation():
+    
+
 s = Solver() # create a solver s
-
-def find(index,tours):
-    """
-    per ogni [i][j] di tours, abbiamo una lista k1,k2,k3,...kn
-    questa lista viene messa in AND logico dentro una parentesi (k1 & k2 & k3 ...)
-    ogni k1 .. ha davanti l'operatore logico corrispondente per computare l'elemento index
-    es: index = 2 bin: 0010 (meno significativo a dx)
-    --> cerchiamo un numero (!k1 & !k2 & k3 & !k4)
-    tutte vengono aggiunte alla list[]
-    si controlla che in list sia presente exactly_once(list[])
-    quindi in tutte le i,j combinazioni di tours, solo una deve "accendersi" logicamente con l'index corrispondente
-    """
-
-    list = []
-    enc = bin(index) #codifica in binario di index (1..n) -> 0b10 (esempio per index = 2)
-    index_encoding = enc[2:].rjust(depth_tours, '0') #portiamo con padding depth_tours (ex: 8) -> '00001000'
-
-    #recuperiamo tutti i k elementi di un [i][j]
-    #j in range(n-m+3)] for i in range(m)]
-    for i in range(m):
-        for j in range(n-m+3):
-            #abbiamo tutti i k di depth associati a [i][j]-esimo
-            sub_list = []
-            for k in range(depth_tours):
-                #k0,k1,k2... <--> index_encoding (stessa dimensione)
-                if(index_encoding[k] == '0'):
-                    sub_list.append(Not(tours[i][j][k]))
-                else:
-                    sub_list.append(tours[i][j][k])
-
-            #questa sub_lista deve avere tutti gli elementi in AND logico
-            #successivamente vanno aggiunti alla list[] in OR
-            list.append(And(sub_list))
-
-    return list
 
 #constraint 1: each item exactly once
 for i in range(1,n+1): #iterate on 1,2,3...5
-    exactly_one(find(i,tours)) #for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
-
-
-x = Bool("x")
-y = Bool("y")
-
-x_or_y = Or([x,y]) # disjunction
-x_and_y = And([x,y]) # conjunction
-not_x = Not(x) # negation
-x_or_y_iff_not_x = x_and_y == not_x # This is the formula (x_or_y <=> not_x) not a boolean!
-
-s = Solver() # create a solver s
-s.add(x_or_y) # add the clause: x or y
-z = Bool("z")
-s.add(Or([x,y,Not(z)])) # add another clause: x or y or !z
+    s.add(exactly_one(find(i,tours))) #for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
 
 print(s.check())
 
