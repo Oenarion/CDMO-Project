@@ -15,7 +15,7 @@ def exactly_one(bool_vars):
 m = 3 #couriers
 n = 7 #items
 l = [15, 10, 7] #max load per courier
-s = [3, 2, 6, 8, 5, 4, 4] #weight of each item
+s_dato = [3, 2, 6, 8, 5, 4, 4] #weight of each item
 D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [3, 0, 4, 3, 4, 7, 7, 3],
     [3, 4, 0, 7, 6, 3, 5, 3],
@@ -25,12 +25,26 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [6, 7, 5, 6, 3, 2, 0, 4],
     [2, 3, 3, 4, 3, 4, 4, 0]]
 
+s = Solver() # create a solver s
+
+# encoding of the sizes
+max_weight = max(s_dato) #compute the maximum weight among all items
+depth_weight = math.ceil(math.log2(max_weight+1))
+sizes = [[Bool(f"size{i}_{j}") for i in range(n)] for j in range(depth_weight)]
+for i in range(len(s_dato)):
+    binary_enc = bin(s_dato[i])[2:].rjust(depth_weight, '0')
+    for j in range(len(binary_enc)):
+        if binary_enc[j] == '0':
+            s.add(Not(sizes[i][j]))
+        else:
+            s.add(sizes[i][j])
+
+
+
 #control parameters
 #depth = math.log(n+1)
 depth_tours = math.ceil(math.log2(n+1))
 
-max_weight = max(s) #compute the maximum weight among all items
-depth_weight = math.ceil(math.log2(max_weight))
 
 """
 tours: 3 boolean arrays, each position in each row is the delivery index. starting from origin point, ending in origin point
@@ -39,12 +53,8 @@ ex: [5,1,2,5]
     [5,4,5,5]
 """
 tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
-items = [[Bool(f"item{i}_{j}") for i in range(n)] for j in range(depth_weight)]
-
 #items index = {i} index from items list
 #we should add a constraint that says that from all i,j
-
-s = Solver() # create a solver s
 
 def find(index,tours):
     """
@@ -157,7 +167,7 @@ for i in range(m):
 for row in matrix2:
     print(row)
 
-#costruisco la matrice
+print(model)
 
 
 """
