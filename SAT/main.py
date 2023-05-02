@@ -96,6 +96,13 @@ for i in range(m):
              tmp2.append(Not(tours[i][j+1][k]))
         s.add(Implies(And(tmp), And(tmp2)))
 
+# constraint on the starting point
+for i in range(m):
+    tmp = []
+    for k in range(depth_tours):
+        tmp.append(Not(tours[i][0][k]))
+    s.add(And(tmp))
+
 
 print(s.check())
 
