@@ -93,9 +93,12 @@ def find(index,tours):
 
 #constraint 1: each item exactly once
 for i in range(1,n+1): #iterate on 1,2,3...5
-    s.add(exactly_one(find(i,tours))) #for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
+    # for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
+    s.add(exactly_one(find(i,tours))) 
+    
 
-# constraint if there is the home, then all the number after it must be n+1, because he have terminated the journey
+# constraint if there is the origin point, then all the number after it must be n+1
+# because he have terminated the journey
 for i in range(m):
     for j in range(2, n-m+3-1):
         tmp = []
@@ -112,6 +115,14 @@ for i in range(m):
     for k in range(depth_tours):
         tmp.append(Not(tours[i][0][k]))
     s.add(And(tmp))
+
+# constraint To achieve a fair division among drivers, 
+# each courier must have at least an item (because n>=m)
+for i in range(m):
+    tmp = []
+    for k in range(depth_tours):
+        tmp.append(tours[i][1][k])
+    s.add(Or(tmp))
 
 
 print(s.check())
