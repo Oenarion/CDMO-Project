@@ -27,17 +27,29 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
 
 s = Solver() # create a solver s
 
-# encoding of the sizes
+# encoding of the sizes of items
 max_weight = max(s_dato) #compute the maximum weight among all items
 depth_weight = math.ceil(math.log2(max_weight+1))
-sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(m)]
-for i in range(m):
+sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(n)]
+for i in range(n):
     binary_enc = bin(s_dato[i])[2:].rjust(depth_weight, '0')
     for j in range(depth_weight):
         if binary_enc[j] == '0':
             s.add(Not(sizes[i][j]))
         else:
             s.add(sizes[i][j])
+
+# encoding of the capacity of each couriers
+max_capacity = max(l) #compute the maximum capacity among all couriers
+depth_capacity = math.ceil(math.log2(max_capacity+1))
+capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
+for i in range(m):
+    binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
+    for j in range(depth_capacity):
+        if binary_enc[j] == '0':
+            s.add(Not(capacities[i][j]))
+        else:
+            s.add(capacities[i][j])
 
 
 
@@ -124,13 +136,87 @@ for i in range(m):
         tmp.append(tours[i][1][k])
     s.add(Or(tmp))
 
+# constraint for max courier load
+# sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(m)]
+# capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
+# tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
+
+def binary_adder_(a,b,name,solver):
+    # effettuo soma binaria di a + b (che sono una lista[][] di True-false)
+    # somma la stessa cardinalità
+
+    len_a = len(a)
+    len_b = len(b)
+    max_len = max(len_a,len_b)
+
+    if len_a != max_len: #padding per a
+        delta = max_len - len_a
+        a = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(a)
+        
+        for i in range(delta):
+            solver.add(Not(a[i]))
+
+    if len_b != max_len: #padding per b
+        delta = max_len - len_b
+        b = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(b)
+
+        for i in range(delta):
+            solver.add(Not(a[i]))
+
+    #ora abbiamo i numeri con stesso padding (cardinalità)
+
+    d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
+    c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
+
+    solver.add(Not(c[max_len]))
+
+    #ora finamente dopo un enorme preambolo faccio la somma bit-bit
+
+
+
+
+        
+
+    """
+    if(len_a != len_b):
+        raise Exception("cardinality difference in binary_adder") 
+    """
+    
+
+
+
+
+def check_weight(weight_list,capacity_encoding):
+
+    # 1) sommare tutti gli encoding di weight_list
+    # 2) dalla somma calcolata effettuo la sottrazione con la capacity_encoding
+    # 3) ritorno il bit di segno da aggiungere al solver (per capire se maggiore o minore)
+
+
+
+
+for i in range(m):
+    weight_list = []
+    for j in range(n-m+3):
+        #itero su riga i
+        weight_encoding = tours[i][j]
+        weight_list.append(weight_encoding)
+    check_weight(weight_list,capacities[i])
+
+        
+
+
+
+
+
+
 
 print(s.check())
 
 model = s.model()
 
 
-# print(model)
+print(model)
 
 
 
