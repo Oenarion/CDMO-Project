@@ -102,4 +102,10 @@ search_ann = int_search(tours, dom_w_deg, indomain_random);
 solve :: search_ann
 % minimize max(distances_of_tours);
 minimize max_distance_of_tours;
-output[show(tours), "\n", show(max_distance_of_tours)];
+
+int: digs = ceil(log(10.0,int2float(n+1))); % digits for output
+output["tours: \n"] ++
+  [ show_int(digs,tours[i,j]) ++ " " ++ 
+    if j == lastElement then "\n" else "" endif |
+    i in NUMBER_OF_COURIERS, j in TOUR_SIZE ] ++ 
+  ["max distance: \(max_distance_of_tours)"];

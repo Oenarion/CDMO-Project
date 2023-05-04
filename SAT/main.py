@@ -30,10 +30,10 @@ s = Solver() # create a solver s
 # encoding of the sizes
 max_weight = max(s_dato) #compute the maximum weight among all items
 depth_weight = math.ceil(math.log2(max_weight+1))
-sizes = [[Bool(f"size{i}_{j}") for i in range(n)] for j in range(depth_weight)]
-for i in range(len(s_dato)):
+sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(m)]
+for i in range(m):
     binary_enc = bin(s_dato[i])[2:].rjust(depth_weight, '0')
-    for j in range(len(binary_enc)):
+    for j in range(depth_weight):
         if binary_enc[j] == '0':
             s.add(Not(sizes[i][j]))
         else:
@@ -119,7 +119,7 @@ print(s.check())
 model = s.model()
 
 
-
+# print(model)
 
 
 
@@ -129,20 +129,22 @@ results = []
 
 # itera attraverso le variabili del modello
 for decl in model:
+    
     # ottieni il nome della variabile
     name = decl.name()
+    if name.startswith("tour"):
 
-    #rimuovo tour dal nome
-    sub_string = name[4:]
-    parts = sub_string.split("_")
+        #rimuovo tour dal nome
+        sub_string = name[4:]
+        parts = sub_string.split("_")
 
-    # ottieni il valore assegnato alla variabile nel modello
-    val = model[decl]
+        # ottieni il valore assegnato alla variabile nel modello
+        val = model[decl]
 
-    #i,j,k
-    results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
-    # stampa il nome e il valore della variabile
-    #print(f"{name}: {val}")
+        #i,j,k
+        results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
+        # stampa il nome e il valore della variabile
+        #print(f"{name}: {val}")
 
 
 matrix = [[['0' for x in range(depth_tours)] for y in range(n-m+3)] for z in range(m)]
@@ -167,7 +169,6 @@ for i in range(m):
 for row in matrix2:
     print(row)
 
-print(model)
 
 
 """
