@@ -214,9 +214,9 @@ def check_weight(solver):
                 for t in range(len(x_enc)): #iteration on the binary encoding list
                     for z in range(len(x_enc[t])):  #iteration on every bit of each entry of the encoding list
                         if(x_enc[t][z]=="0"):   #checking if the bit is 0, if that's the case we add the negation of tours matrix
-                            check_list.append(Not(tours[i][t][z])) #to the check list to check afterwards if the courier can deliver the packages
+                            check_list.append(Not(tours[i][t+1][z])) #to the check list to check afterwards if the courier can deliver the packages
                         else:
-                            check_list.append(tours[i][t][z])
+                            check_list.append(tours[i][t+1][z])
                             
                 # 1) recuperare la capacità in binario del corriere i
                 # 2) effettuare la somma fra tutti gli encoding in x_enc
