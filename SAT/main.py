@@ -199,22 +199,52 @@ for i in range(m):
 
 
 
-def check_weight(weight_list,capacity_encoding):
-    pass
+def check_weight(solver):
     # 1) sommare tutti gli encoding di weight_list
     # 2) dalla somma calcolata effettuo la sottrazione con la capacity_encoding
     # 3) ritorno il bit di segno da aggiungere al solver (per capire se maggiore o minore)
+    
+    for i in range(m):      #number of couriers
+        for j in range(1,n-m+2):       #number of packages that a courier COULD deliver
+            for pair in permutations(range(1,n+1),j):     #every permutation of those packages
+                x_enc=[]    
+                check_list=[]
+                for x in pair:  #takes every permutation and transform them in binary encoding
+                    x_enc.append(bin(x)[2:].rjust(depth_tours, '0'))
+                for t in range(len(x_enc)): #iteration on the binary encoding list
+                    for z in range(len(x_enc[t])):  #iteration on every bit of each entry of the encoding list
+                        if(x_enc[t][z]=="0"):   #checking if the bit is 0, if that's the case we add the negation of tours matrix
+                            check_list.append(Not(tours[i][t][z])) #to the check list to check afterwards if the courier can deliver the packages
+                        else:
+                            check_list.append(tours[i][t][z])
+                            
+                # 1) recuperare la capacità in binario del corriere i
+                # 2) effettuare la somma fra tutti gli encoding in x_enc
+                # 3) sottrarre la capacità del corriere con la somma e aggiungere il not del bit di segno
+                capacity=l[i]
+                w_tot=0
+                bit_sign=Bool(f"check_weight_{i}_{pair}")
+                for p in pair:
+                    w_tot+=s_dato[p-1]
+                if w_tot>capacity:
+                    solver.add(Not(bit_sign))
+                else:
+                    solver.add(bit_sign)
+                    
+                solver.add(Implies(And(check_list),bit_sign))
+                    
+            
+        
 
 
 
-
-for i in range(m):
-    weight_list = []
-    for j in range(n-m+3):
-        #itero su riga i
-        weight_encoding = tours[i][j]
-        weight_list.append(weight_encoding)
-    check_weight(weight_list,capacities[i])
+# for i in range(m):
+#     weight_list = []
+#     for j in range(n-m+3):
+#         #itero su riga i
+#         weight_encoding = tours[i][j]
+#         weight_list.append(weight_encoding)
+check_weight(s)
 
         
 
