@@ -103,6 +103,57 @@ def find(index,tours):
 
     return list
 
+def binary_adder_(a,b,name,solver):
+    # effettuo soma binaria di a + b (che sono una lista[][] di True-false)
+    # somma la stessa cardinalità
+
+    len_a = len(a)
+    len_b = len(b)
+    max_len = max(len_a,len_b)
+
+    if len_a != max_len: #padding per a
+        delta = max_len - len_a
+        a = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(a)
+        
+        for i in range(delta):
+            solver.add(Not(a[i]))
+
+    if len_b != max_len: #padding per b
+        delta = max_len - len_b
+        b = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(b)
+
+        for i in range(delta):
+            solver.add(Not(a[i]))
+
+    #ora abbiamo i numeri con stesso padding (cardinalità)
+
+    d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
+    c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
+
+    solver.add(Not(c[max_len]))
+    
+    #ora finamente dopo un enorme preambolo faccio la somma bit-bit
+    for i in range(len(d),-1):
+        #double implication
+        solver.add(Implies(d[i],Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]))))
+        solver.add(Implies(Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]))),d[i])
+        if(i>0):
+            solver.add(Implies(c[i-1],Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i]))))
+            solver.add(Implies(Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i]))),c[i-1])
+    
+    return (d.insert(0,c[-1]))
+
+
+binary_adder_(sizes[0],sizes[1],"sus",s)
+print(s.check())
+
+model = s.model()
+
+
+print(model)
+
+exit(0)
+
 #constraint 1: each item exactly once
 for i in range(1,n+1): #iterate on 1,2,3...5
     # for each [i][j] where bin(item_index) == [j][j][:] --> add constraint exactly_once
@@ -140,43 +191,7 @@ for i in range(m):
 # sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(m)]
 # capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
 # tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
-
-def binary_adder_(a,b,name,solver):
-    # effettuo soma binaria di a + b (che sono una lista[][] di True-false)
-    # somma la stessa cardinalità
-
-    len_a = len(a)
-    len_b = len(b)
-    max_len = max(len_a,len_b)
-
-    if len_a != max_len: #padding per a
-        delta = max_len - len_a
-        a = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(a)
         
-        for i in range(delta):
-            solver.add(Not(a[i]))
-
-    if len_b != max_len: #padding per b
-        delta = max_len - len_b
-        b = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(b)
-
-        for i in range(delta):
-            solver.add(Not(a[i]))
-
-    #ora abbiamo i numeri con stesso padding (cardinalità)
-
-    d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
-    c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
-
-    solver.add(Not(c[max_len]))
-
-    #ora finamente dopo un enorme preambolo faccio la somma bit-bit
-
-
-
-
-        
-
     """
     if(len_a != len_b):
         raise Exception("cardinality difference in binary_adder") 
@@ -187,7 +202,7 @@ def binary_adder_(a,b,name,solver):
 
 
 def check_weight(weight_list,capacity_encoding):
-
+    pass
     # 1) sommare tutti gli encoding di weight_list
     # 2) dalla somma calcolata effettuo la sottrazione con la capacity_encoding
     # 3) ritorno il bit di segno da aggiungere al solver (per capire se maggiore o minore)
