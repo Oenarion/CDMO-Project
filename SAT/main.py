@@ -15,7 +15,7 @@ def exactly_one(bool_vars):
 m = 3 #couriers
 n = 7 #items
 l = [15, 10, 7] #max load per courier
-s_dato = [3, 2, 6, 8, 5, 4, 4] #weight of each item
+s_dato = [3,2, 6, 8, 5, 4, 4] #weight of each item
 D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [3, 0, 4, 3, 4, 7, 7, 3],
     [3, 4, 0, 7, 6, 3, 5, 3],
@@ -124,35 +124,33 @@ def binary_adder_(a,b,name,solver):
 
         for i in range(delta):
             solver.add(Not(a[i]))
-
+    
     #ora abbiamo i numeri con stesso padding (cardinalità)
 
     d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
     c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
-
+    
+           
     solver.add(Not(c[max_len]))
     
     #ora finamente dopo un enorme preambolo faccio la somma bit-bit
-    for i in range(len(d),-1):
+    for i in reversed(range(len(d))):
         #double implication
-        solver.add(Implies(d[i],Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]))))
-        solver.add(Implies(Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]))),d[i])
+    
+        solver.add(Implies(d[i],Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]),And(a[i],b[i],c[i]))))
+        solver.add(Implies(Or(And(a[i],Not(b[i]),Not(c[i])),And(Not(a[i]),b[i],Not(c[i])),And(Not(a[i]),Not(b[i]),c[i]),And(a[i],b[i],c[i])),d[i]))
         if(i>0):
             solver.add(Implies(c[i-1],Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i]))))
-            solver.add(Implies(Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i]))),c[i-1])
+            solver.add(Implies(Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i])),c[i-1]))
     
     return (d.insert(0,c[-1]))
 
 
-binary_adder_(sizes[0],sizes[1],"sus",s)
-print(s.check())
+# binary_adder_(sizes[0],sizes[1],"sus",s)
+# print(s.check())
+# model = s.model()
+# print(model)
 
-model = s.model()
-
-
-print(model)
-
-exit(0)
 
 #constraint 1: each item exactly once
 for i in range(1,n+1): #iterate on 1,2,3...5
