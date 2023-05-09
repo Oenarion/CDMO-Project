@@ -30,26 +30,26 @@ s = Solver() # create a solver s
 # encoding of the sizes of items
 max_weight = max(s_dato) #compute the maximum weight among all items
 depth_weight = math.ceil(math.log2(max_weight+1))
-sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(n)]
-for i in range(n):
-    binary_enc = bin(s_dato[i])[2:].rjust(depth_weight, '0')
-    for j in range(depth_weight):
-        if binary_enc[j] == '0':
-            s.add(Not(sizes[i][j]))
-        else:
-            s.add(sizes[i][j])
+# sizes = [[Bool(f"size{i}_{j}") for j in range(depth_weight)] for i in range(n)]
+# for i in range(n):
+#     binary_enc = bin(s_dato[i])[2:].rjust(depth_weight, '0')
+#     for j in range(depth_weight):
+#         if binary_enc[j] == '0':
+#             s.add(Not(sizes[i][j]))
+#         else:
+#             s.add(sizes[i][j])
 
 # encoding of the capacity of each couriers
 max_capacity = max(l) #compute the maximum capacity among all couriers
 depth_capacity = math.ceil(math.log2(max_capacity+1))
-# capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
-# for i in range(m):
-#     binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
-#     for j in range(depth_capacity):
-#         if binary_enc[j] == '0':
-#             s.add(Not(capacities[i][j]))
-#         else:
-#             s.add(capacities[i][j])
+capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
+for i in range(m):
+    binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
+    for j in range(depth_capacity):
+        if binary_enc[j] == '0':
+            s.add(Not(capacities[i][j]))
+        else:
+            s.add(capacities[i][j])
 
 
 
@@ -116,7 +116,7 @@ def binary_adder_(a,b,name,solver):
 
     if len_a != max_len: #padding per a
         delta = max_len - len_a
-        a1 = [Bool(f"paddingAdd_{name}_{k}") for k in range(delta)]
+        a1 = [Bool(f"paddingAdd1_{name}_{k}") for k in range(delta)]
         a1.extend(a)
         a=a1
         
@@ -125,7 +125,7 @@ def binary_adder_(a,b,name,solver):
 
     if len_b != max_len: #padding per b
         delta = max_len - len_b
-        b1 = [Bool(f"paddingAdd_{name}_{k}") for k in range(delta)]
+        b1 = [Bool(f"paddingAdd2_{name}_{k}") for k in range(delta)]
         b1.extend(b)
         b=b1
         
@@ -277,11 +277,11 @@ def check_weight(solver):
 
     for i in range(m):
         temp=[]
-        courier_weight=binary_encoding(l[i],depth_capacity)
+        # courier_weight=binary_encoding(l[i],depth_capacity)
         temp=binary_adder_(weights[i][0],weights[i][1],f"courier{i}",solver)
         for j in range(2,n-m+3):
-            temp=binary_adder_(weights[i][j],temp,f"courier{i}",solver)
-        result=binary_subtraction(courier_weight,temp,f"courier{i}",solver)
+            temp=binary_adder_(weights[i][j],temp,f"courier{i}_{j}",solver)
+        result=binary_subtraction(capacities[i],temp,f"courierSub{i}",solver)
         solver.add(result)
         
         
@@ -295,7 +295,7 @@ def binary_subtraction(enc1,enc2,name,solver):
     reversed_enc=[]
 
     delta = max_len - len_a
-    a = [Bool(f"paddingSub_{name}_{k}") for k in range(delta)]
+    a = [Bool(f"paddingSub1_{name}_{k}") for k in range(delta)]
     a.extend(enc1)
     
         
@@ -303,7 +303,7 @@ def binary_subtraction(enc1,enc2,name,solver):
         solver.add(Not(a[i]))
     
     delta=max_len - len_b
-    b = [Bool(f"paddingSub_{name}_{k}") for k in range(delta)]
+    b = [Bool(f"paddingSub2_{name}_{k}") for k in range(delta)]
     b.extend(enc2)
 
     for i in b:
@@ -314,8 +314,8 @@ def binary_subtraction(enc1,enc2,name,solver):
     solver.add(bool)
     reversed_enc=binary_adder_(reversed_enc,bool,f"{name}_temp",solver)
     
-    for i in range(delta):
-        solver.add(reversed_enc[i])
+    # for i in range(delta):
+    #     solver.add(reversed_enc[i])
 
     return binary_adder_(a,reversed_enc,f"final{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
     
@@ -337,24 +337,6 @@ def binary_encoding(num,depth):
 #         weight_list.append(weight_encoding)
 
 
-
-
-check_weight(s)
-
-        
-
-
-
-
-
-
-
-print(s.check())
-
-model = s.model()
-
-
-print(model)
 
 
 
@@ -404,8 +386,23 @@ def printer(model,string_name,i,j,k):
     for row in matrix2:
         print(row)
 
-printer(model,"weight",m,n-m+3,depth_weight)
-printer(model,"tour",m,n-m+3,depth_tours)
+
+
+
+
+check_weight(s)
+
+
+print(s.check())
+
+try:
+    model = s.model()
+    #print(model)
+    printer(model,"weight",m,n-m+3,depth_weight)
+    printer(model,"tour",m,n-m+3,depth_tours)
+except:
+    pass
+
 
 """
 #tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]

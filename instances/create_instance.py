@@ -26,7 +26,7 @@ while(not checkWeigths):
         checkWeigths = True
 
 print(f"m = {n_courier};\nn = {n_items};")
-print(f"l = {sizes};\ns = {weights};")
+print(f"l = {str(sizes).replace(' ', ', ')};\ns = {str(weights).replace(' ', ', ')};")
 
 res = subprocess.run(["minizinc", "getDistances.mzn", "-D", f"m={n_courier};n={n_items};"], capture_output=True)
 distances = str(res.stdout).split(';')[0].split('\'')[1]

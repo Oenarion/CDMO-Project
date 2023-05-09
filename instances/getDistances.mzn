@@ -5,10 +5,17 @@ set of int: DISTANCES = 1..n+1;
 set of int: DISTANCE_DOMAIN = 0..20;
 array[DISTANCES, DISTANCES] of var DISTANCE_DOMAIN: D; % Distances
 
+
 constraint forall(i in DISTANCES) (
-  D[i,i] = 0
+  forall(j in DISTANCES) (
+    if i != j
+    then D[i,j] > 0 
+    else D[i,j] = 0
+    endif
+  )
 );
 
+% triangle inequality
 constraint forall(i in DISTANCES) (
   forall(j in DISTANCES) (
     forall(k in DISTANCES) (
