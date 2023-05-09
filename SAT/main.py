@@ -42,14 +42,14 @@ for i in range(n):
 # encoding of the capacity of each couriers
 max_capacity = max(l) #compute the maximum capacity among all couriers
 depth_capacity = math.ceil(math.log2(max_capacity+1))
-capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
-for i in range(m):
-    binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
-    for j in range(depth_capacity):
-        if binary_enc[j] == '0':
-            s.add(Not(capacities[i][j]))
-        else:
-            s.add(capacities[i][j])
+# capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
+# for i in range(m):
+#     binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
+#     for j in range(depth_capacity):
+#         if binary_enc[j] == '0':
+#             s.add(Not(capacities[i][j]))
+#         else:
+#             s.add(capacities[i][j])
 
 
 
@@ -65,6 +65,9 @@ ex: [5,1,2,5]
     [5,4,5,5]
 """
 tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
+
+weights=[[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(n-m+3)] for i in range(m)]
+
 #items index = {i} index from items list
 #we should add a constraint that says that from all i,j
 
@@ -113,24 +116,27 @@ def binary_adder_(a,b,name,solver):
 
     if len_a != max_len: #padding per a
         delta = max_len - len_a
-        a = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(a)
+        a1 = [Bool(f"paddingAdd_{name}_{k}") for k in range(delta)]
+        a1.extend(a)
+        a=a1
         
         for i in range(delta):
             solver.add(Not(a[i]))
 
     if len_b != max_len: #padding per b
         delta = max_len - len_b
-        b = [Bool(f"padding_{name}_{k}") for k in range(delta)].append(b)
-
+        b1 = [Bool(f"paddingAdd_{name}_{k}") for k in range(delta)]
+        b1.extend(b)
+        b=b1
+        
         for i in range(delta):
-            solver.add(Not(a[i]))
+            solver.add(Not(b[i]))
     
     #ora abbiamo i numeri con stesso padding (cardinalità)
 
     d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
     c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
     
-           
     solver.add(Not(c[max_len]))
     
     #ora finamente dopo un enorme preambolo faccio la somma bit-bit
@@ -143,7 +149,8 @@ def binary_adder_(a,b,name,solver):
             solver.add(Implies(c[i-1],Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i]))))
             solver.add(Implies(Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i])),c[i-1]))
     
-    return (d.insert(0,c[-1]))
+    d.insert(0,c[-1])
+    return (d)
 
 
 # binary_adder_(sizes[0],sizes[1],"sus",s)
@@ -199,7 +206,7 @@ for i in range(m):
 
 
 
-def check_weight(solver):
+def check_weight2(solver):
     # 1) sommare tutti gli encoding di weight_list
     # 2) dalla somma calcolata effettuo la sottrazione con la capacity_encoding
     # 3) ritorno il bit di segno da aggiungere al solver (per capire se maggiore o minore)
@@ -234,16 +241,104 @@ def check_weight(solver):
                 solver.add(Implies(And(check_list),bit_sign))
                     
             
+def check_weight(solver):
+    
+    for i in range(n):
+        bin_enc=binary_encoding(i+1,depth_tours)        #takes the encoding the number of the package
+        weight_enc=binary_encoding(s_dato[i],depth_weight)   #takes the encoding of the weight of the package
+        for j in range(m):
+            for k in range(n-m+3):
+                check_list=[]
+                for t in range(len(bin_enc)): #iteration on every bit of the binary encoding
+                    if(bin_enc[t]=="0"):   #checking if the bit is 0, if that's the case we add the negation of tours matrix
+                        check_list.append(Not(tours[j][k][t])) #to the check list to check afterwards if the courier can deliver the packages
+                    else:
+                        check_list.append(tours[j][k][t])
+                check_weight_list=[]
+                for t in range(len(weight_enc)): #doing the same thing on weights
+                    if(weight_enc[t]=="0"):   
+                        check_weight_list.append(Not(weights[j][k][t])) 
+                    else:
+                        check_weight_list.append(weights[j][k][t])
+                solver.add(Implies(And(check_list),And(check_weight_list)))
+    
+    zero_enc=binary_encoding(0,depth_tours)
+    zero_weight_enc=binary_encoding(0,depth_weight)
+    
+    for j in range(m):
+        for k in range(n-m+3):
+            zero_check=[]
+            for t in range(len(zero_enc)): #iteration on every bit of the binary encoding
+                zero_check.append(Not(tours[j][k][t])) #to the check list to check afterwards if the courier can deliver the packages
+            check_weight_zero_list=[]
+            for t in range(len(zero_weight_enc)): #doing the same thing on weights  
+                check_weight_zero_list.append(Not(weights[j][k][t])) 
+            solver.add(Implies(And(zero_check),And(check_weight_zero_list)))
+
+    for i in range(m):
+        temp=[]
+        courier_weight=binary_encoding(l[i],depth_capacity)
+        temp=binary_adder_(weights[i][0],weights[i][1],f"courier{i}",solver)
+        for j in range(2,n-m+3):
+            temp=binary_adder_(weights[i][j],temp,f"courier{i}",solver)
+        result=binary_subtraction(courier_weight,temp,f"courier{i}",solver)
+        solver.add(result)
+        
         
 
 
+def binary_subtraction(enc1,enc2,name,solver):
+    len_a = len(enc1)
+    len_b = len(enc2)
+    max_len = max(len_a,len_b)+1
 
+    reversed_enc=[]
+
+    delta = max_len - len_a
+    a = [Bool(f"paddingSub_{name}_{k}") for k in range(delta)]
+    a.extend(enc1)
+    
+        
+    for i in range(delta):
+        solver.add(Not(a[i]))
+    
+    delta=max_len - len_b
+    b = [Bool(f"paddingSub_{name}_{k}") for k in range(delta)]
+    b.extend(enc2)
+
+    for i in b:
+        reversed_enc.append(Not(i))    
+    
+    
+    bool = [Bool(f"{name}_bit_to_add") for j in range(1)]
+    solver.add(bool)
+    reversed_enc=binary_adder_(reversed_enc,bool,f"{name}_temp",solver)
+    
+    for i in range(delta):
+        solver.add(reversed_enc[i])
+
+    return binary_adder_(a,reversed_enc,f"final{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
+    
+
+
+
+
+def binary_encoding(num,depth):
+    try:
+        return bin(num)[2:].rjust(depth, '0') #most significant bit is the first one
+    except:
+        print("NaN")
+        exit(1)
 # for i in range(m):
 #     weight_list = []
 #     for j in range(n-m+3):
 #         #itero su riga i
 #         weight_encoding = tours[i][j]
 #         weight_list.append(weight_encoding)
+
+
+
+
 check_weight(s)
 
         
@@ -263,53 +358,54 @@ print(model)
 
 
 
+def printer(model,string_name,i,j,k):
+    #faccio una lista di tuple
+    results = []
 
-#faccio una lista di tuple
-results = []
+    # itera attraverso le variabili del modello
+    for decl in model:
+        
+        # ottieni il nome della variabile
+        name = decl.name()
+        if name.startswith(string_name):
 
-# itera attraverso le variabili del modello
-for decl in model:
-    
-    # ottieni il nome della variabile
-    name = decl.name()
-    if name.startswith("tour"):
+            #rimuovo tour dal nome
+            sub_string = name[len(string_name):]
+            parts = sub_string.split("_")
 
-        #rimuovo tour dal nome
-        sub_string = name[4:]
-        parts = sub_string.split("_")
+            # ottieni il valore assegnato alla variabile nel modello
+            val = model[decl]
 
-        # ottieni il valore assegnato alla variabile nel modello
-        val = model[decl]
-
-        #i,j,k
-        results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
-        # stampa il nome e il valore della variabile
-        #print(f"{name}: {val}")
-
-
-matrix = [[['0' for x in range(depth_tours)] for y in range(n-m+3)] for z in range(m)]
-for r in results:
-    if r[3]:
-        matrix[r[0]][r[1]][r[2]] = '1'
-    else:
-        matrix[r[0]][r[1]][r[2]] = '0'
-
-matrix2 = [['0' for y in range(n-m+3)] for z in range(m)]
-for i in range(m):
-    for j in range(n-m+3):
-
-        string_bin = ""
-
-        for k in range(depth_tours):
-            string_bin += matrix[i][j][k]
-
-        #conversione in dec
-        matrix2[i][j] = int (string_bin,2)
-
-for row in matrix2:
-    print(row)
+            #i,j,k
+            results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
+            # stampa il nome e il valore della variabile
+            #print(f"{name}: {val}")
 
 
+    matrix = [[['0' for x in range(k)] for y in range(j)] for z in range(i)]
+    for r in results:
+        if r[3]:
+            matrix[r[0]][r[1]][r[2]] = '1'
+        else:
+            matrix[r[0]][r[1]][r[2]] = '0'
+
+    matrix2 = [['0' for y in range(j)] for z in range(i)]
+    for x in range(i):
+        for y in range(j):
+
+            string_bin = ""
+
+            for z in range(k):
+                string_bin += matrix[x][y][z]
+
+            #conversione in dec
+            matrix2[x][y] = int (string_bin,2)
+    print(string_name)
+    for row in matrix2:
+        print(row)
+
+printer(model,"weight",m,n-m+3,depth_weight)
+printer(model,"tour",m,n-m+3,depth_tours)
 
 """
 #tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
