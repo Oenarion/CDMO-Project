@@ -396,7 +396,9 @@ def binary_subtraction(enc1,enc2,name,solver):
     
     bool = [Bool(f"{name}_bit_to_add") for j in range(1)]
     solver.add(bool)
-    reversed_enc=binary_adder_(reversed_enc,bool,f"{name}_temp",solver)
+    complement2 = binary_adder_(reversed_enc,bool,f"{name}_temp",solver)
+    # removing the bit added during the operation, because during the 2'complement operation we must mantein the same number of bits 
+    reversed_enc[len(complement2)-len(reversed_enc):]
     # for i in range(delta):
     #     solver.add(reversed_enc[i])
 
