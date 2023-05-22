@@ -96,7 +96,7 @@ def binary_subtraction(enc1,enc2,name,solver):
 
     return binary_adder_(a,reversed_enc,f"final_{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
 
-def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities):
+def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities):       #TO CHECK
     
     for i in range(n):
         bin_enc=binary_encoding(i+1,depth_tours)        #takes the encoding the number of the package
@@ -131,15 +131,13 @@ def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
             solver.add(Implies(And(zero_check),And(check_weight_zero_list)))
 
     for i in range(m):
-        temp=[]
-        # courier_weight=binary_encoding(l[i],depth_capacity)
-        temp=binary_adder_(weights[i][0],weights[i][1],f"courier{i}",solver)
+        binary_sum=binary_adder_(weights[i][0],weights[i][1],f"courier{i}",solver)
         for j in range(2,n-m+3):
-            temp=binary_adder_(weights[i][j],temp,f"courier{i}_{j}",solver)
-        result=binary_subtraction(capacities[i],temp,f"courierSub{i}",solver)
+            binary_sum=binary_adder_(weights[i][j],binary_sum,f"courier{i}_{j}",solver)
+        result=binary_subtraction(capacities[i],binary_sum,f"courierSub{i}",solver)
         solver.add(result)
              
-def checkDistances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
+def create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
     for i in range(n+1):
         bin_enc1 = binary_encoding(i, depth_tours) #takes the encoding the number of the package
         for j in range(n+1):
@@ -176,7 +174,14 @@ def checkDistances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
                             bool_enc2.append(tours[x][y+1][z])
                     
                     solver.add(Implies(And(And(bool_enc1),And(bool_enc2)), And(bool_distance_enc)))
-                    
+ 
+def check_distances(solver,n,m,distances,maximum,index):
+    binary_sum=binary_adder_(distances[index][0],distances[index][1],f"distanceAdder{index}",solver)
+    for j in range(2,n-m+3):
+        binary_sum=binary_adder_(distances[index][j],binary_sum,f"distanceAdder{index}_{j}",solver)
+    result=binary_subtraction(maximum,binary_sum,f"distanceSub{index}",solver)
+    solver.add(result)        
+           
 def find(index,n,m,tours,depth_tours):
     """
     per ogni [i][j] di tours, abbiamo una lista k1,k2,k3,...kn

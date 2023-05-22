@@ -43,6 +43,8 @@ def printer(model,string_name,i,j,k):
     print(string_name)
     for row in matrix2:
         print(row)
+    
+    return matrix2
 
 def printGivenName(model, nameGiven):
     for decl in model:
