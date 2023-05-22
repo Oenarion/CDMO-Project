@@ -177,7 +177,7 @@ def create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
  
 def check_distances(solver,n,m,distances,maximum,index):
     binary_sum=binary_adder_(distances[index][0],distances[index][1],f"distanceAdder{index}",solver)
-    for j in range(2,n-m+3):
+    for j in range(2,n-m+2):
         binary_sum=binary_adder_(distances[index][j],binary_sum,f"distanceAdder{index}_{j}",solver)
     result=binary_subtraction(maximum,binary_sum,f"distanceSub{index}",solver)
     solver.add(result)        

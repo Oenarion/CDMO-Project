@@ -22,5 +22,24 @@ def parseInstance(fileName):
 
 def parseLine(line):
     columns = line.split(' ')
-    return columns
+    res = []
+    for x in columns:
+        if x != '':
+            res.append(int(x))
+    return res
+
+def getMinizincInstance(fileName):
+    m, n, l, s, D = parseInstance(fileName)
+    res = f"m={m};n={n};l={l};s={s};D=\n["
+    for i in range(len(D)):
+        for j in range(len(D[i])):
+            if j == 0:
+                res += f"|"
+            res += f"{D[i][j]}"
+            if j != len(D[i])-1:
+                res += f"," 
+            if i == len(D)-1 and j == len(D[i])-1:
+                res += f"|];"
+        res += f"\n"
+    return res
 

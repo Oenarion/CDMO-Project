@@ -6,6 +6,10 @@ from cardinality_constraints import *
 from printer import *
 from arithmetic_op import *
 
+import sys
+sys.path.insert(0, 'instances')
+from parser import *
+
 #input model
 m = 3 #couriers
 n = 7 #items
@@ -48,6 +52,8 @@ for var_name, value in model:
 
 
 def main():
+    #m, n, l, s, D = parseInstance("instances/inst01.dat")
+
     solver = Solver() # create a solver s
 
     # encoding of the sizes of items
@@ -124,27 +130,41 @@ def main():
     check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
     create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
+    checkModel = solver.check()
 
-    print(solver.check())
+    while(str(checkModel) == 'sat'):
+        model = solver.model()
+        # printer(model,"weight",m,n-m+3,depth_weight)
+        # printer(model,"tour",m,n-m+3,depth_tours)
+        matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
+        current_max_distance=np.max(np.sum(matrix_of_distances,axis=1))-1   #we want to check only distances < of the current max (see check_distances)
+        
+        #while(str(checkModel) == 'sat'):
+        solver.push()
+    
+        current_binary_max=binary_encoding(current_max_distance,math.ceil(math.log2(max_distance+1)))
+        current_binary_max_bool=[]
+        for i in range(len(current_binary_max)):        #current_max needs to be in z3
+            if(current_binary_max[i]=='0'):
+                current_binary_max_bool.append(Bool(f"current_binary_max_{i}"))
+        
+        solver.add(And(current_binary_max_bool))
+        for i in range(m):
+            check_distances(solver,n,m,distances,current_binary_max_bool,i)
 
+        checkModel = solver.check()
 
+        print('iterazione')
+        if (str(checkModel) == 'unsat'):
+            print('facio pop')
+            solver.pop()
+
+        print('-'*10)
+
+    solver.check()
     model = solver.model()
-    #printGivenName(model, "final")
-    printer(model,"weight",m,n-m+3,depth_weight)
     printer(model,"tour",m,n-m+3,depth_tours)
-    matrix_of_distances=printer(model, "distance", m, n-m+2, depth_distance)
-    current_max_distance=np.max(np.sum(matrix_of_distances,axis=1))-1   #we want to check only distances < of the current max (see check_distances)
-    solver.push()
     
-    current_binary_max=binary_encoding(current_max_distance,math.ceil(math.log2(max_distance+1)))
-    current_binary_max_bool=[]
-    for i in range(len(current_binary_max)):        #current_max needs to be in z3
-        if(current_binary_max[i]=='0'):
-            current_binary_max_bool.append(Bool(f"current_binary_max_{i}"))
-    
-    solver.add(And(current_binary_max_bool))
-    for i in range(m):
-        check_distances(solver,n,m,distances,current_binary_max_bool,i)
 
 if __name__ == "__main__":
     main()
