@@ -1,6 +1,6 @@
 
 def test(val):
-    if val >= 12:
+    if val >= 6:
         return True
     else:
         return False
@@ -18,10 +18,10 @@ print("inizio ciclo")
 while (last_distance_found - last_distance_failed > 1):
 
     #tento di dimezzare
-    if found:
-        last_distance_trial = (last_distance_found + last_distance_failed) // 2
-    else:
-        last_distance_trial = (last_distance_failed + last_distance_found) // 2
+    # if found:
+    #     last_distance_trial = (last_distance_found + last_distance_failed) // 2
+    # else:
+    last_distance_trial = (last_distance_failed + last_distance_found) // 2
 
     print("last_distance_failed",last_distance_failed)
     print("last_distance_found",last_distance_found)

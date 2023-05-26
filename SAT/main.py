@@ -127,9 +127,7 @@ def main():
 
 
     # constraint to have the exact number of 0 in the matrix       
-    bool_vars = [[tours[i][j] for j in range(n-m+3)] for i in range(m)]
     solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(n-m+3)*m-n, name="at_least_k_0"))
-    #solver.add(exactly_k_seq(bool_vars=find(0,n,m,weights,depth_weight), k=(n-m+3)*m-n, name="at_least_k_0_weight"))
     
     max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
     depth_distance = math.ceil(math.log2(max_distance+1))
@@ -138,176 +136,88 @@ def main():
     check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
     create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
-    # current_binary_max = binary_encoding(12,math.ceil(math.log2(12 + 1)))
-    # print(current_binary_max)
-    # current_binary_max_bool=[Bool(f"current_binary_max_{i}") for i in range(len(current_binary_max))]
-    # current_binary_max_bool_list = []
-    # for i in range(len(current_binary_max)):
-    #     if current_binary_max[i] == '0':
-    #         current_binary_max_bool_list.append(Not(current_binary_max_bool[i]))
-    #     else:
-    #         current_binary_max_bool_list.append(current_binary_max_bool[i])
-    # solver.add(And(current_binary_max_bool_list))
-    # for i in range(m):
-    #     res = check_distances(solver,n,m,distances,current_binary_max_bool,i)
-    #     print(res)
-    #     solver.add(res)
 
     checkModel = solver.check()
+    print(checkModel)
 
-    model = solver.model()
-    # printer(model,"weight",m,n-m+3,depth_weight)
-    printer(model, "weight", m, n-m+3, depth_weight)
-    printer(model,"tour",m,n-m+3,depth_tours)
-    matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-    printer(model, "distance", m, n-m+2, depth_distance)
-    lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
-    print("lastDistanceFound: ", lastDistanceFound)
+    if str(checkModel) == 'sat':
 
-    # for decl in model:
-        
-    #     # ottieni il nome della variabile
-    #     name = decl.name()
-    #     if name == "c_final_DistanceSub0_0" or name == "c_final_DistanceSub1_0" or name == "c_final_DistanceSub2_0":
-
-    #         # ottieni il valore assegnato alla variabile nel modello
-    #         val = model[decl]
-    #         print(name, val)
-
-    # print("-"*10)
-    # for decl in model:
-        
-    #     # ottieni il nome della variabile
-    #     name = decl.name()
-    #     if "DistanceSub" in name:
-
-    #         # ottieni il valore assegnato alla variabile nel modello
-    #         val = model[decl]
-    #         print(name, val)
-
-
-    #exit(0)
-    lastDistanceFailed = 0
-    #lastDistanceFound = -1
-    lastDistanceTrial = lastDistanceFound // 2
-    solutionFound = True
-    #mustBeHalved = True
-
-    def testing():
-        solver.push()
-        current_binary_max = binary_encoding(13,math.ceil(math.log2(13 + 1)))
-        current_binary_max_bool=[Bool(f"current_binary_max_{i}") for i in range(len(current_binary_max))]
-        current_binary_max_bool_list = []
-        for i in range(len(current_binary_max)):
-            if current_binary_max[i] == '0':
-                current_binary_max_bool_list.append(Not(current_binary_max_bool[i]))
-            else:
-                current_binary_max_bool_list.append(current_binary_max_bool[i])
-        solver.add(And(current_binary_max_bool_list))
-        for i in range(m):
-            res = check_distances(solver,n,m,distances,current_binary_max_bool,i)
-            print(res)
-            solver.add(res)
-        solver.check()
-        print(solver.check())
         model = solver.model()
+        printer(model, "weight", m, n-m+3, depth_weight)
         printer(model,"tour",m,n-m+3,depth_tours)
+        printer(model, "distance", m, n-m+2, depth_distance)
         matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-        printer(model,"distance",m,n-m+3,depth_tours)
+        
         lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
+        lastDistanceFailed = 0
+        lastDistanceTrial = lastDistanceFound // 2
+        solutionFound = True
+
         print("lastDistanceFound: ", lastDistanceFound)
-        solver.pop() 
 
-        solver.push()
-        current_binary_max = binary_encoding(13,math.ceil(math.log2(13 + 1)))
-        current_binary_max_bool=[Bool(f"current_binary_max_{i}") for i in range(len(current_binary_max))]
-        current_binary_max_bool_list = []
-        for i in range(len(current_binary_max)):
-            if current_binary_max[i] == '0':
-                current_binary_max_bool_list.append(Not(current_binary_max_bool[i]))
-            else:
-                current_binary_max_bool_list.append(current_binary_max_bool[i])
-        solver.add(And(current_binary_max_bool_list))
-        for i in range(m):
-            res = check_distances(solver,n,m,distances,current_binary_max_bool,i)
-            solver.add(res)
-        solver.check()
-        print(solver.check())
-        try:
-            model = solver.model()
-            printer(model,"tour",m,n-m+3,depth_tours)
-            matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-            printer(model,"distance",m,n-m+3,depth_tours)
-            lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
-            print("lastDistanceFound: ", lastDistanceFound)
-        except:
-            pass
-        solver.pop() 
-
-        exit(0)
-    
-    while(lastDistanceTrial != lastDistanceFound - 1 and lastDistanceTrial != lastDistanceFound):
-        print("lastDistances: ", lastDistanceTrial, lastDistanceFound, lastDistanceFailed)
         
-        if (solutionFound):
-            # if mustBeHalved:
-            #     lastDistanceTrial = lastDistanceFound // 2
-            #     mustBeHalved = False
-            # else:
-            lastDistanceTrial = (lastDistanceFound + lastDistanceFailed) // 2
-            # lastDistanceTrial = (lastDistanceFound - lastDistanceFailed)
-        else:
-            lastDistanceTrial = (lastDistanceFound + lastDistanceTrial) // 2
-            # lastDistanceTrial = (lastDistanceFound - lastDistanceTrial)
-
-        solver.push()
-        print("Try for: ", lastDistanceTrial)
-    
-        # search a solution in the space between 0 and the half of the max distance
-        current_binary_max = binary_encoding(lastDistanceTrial - 1,math.ceil(math.log2(lastDistanceTrial)))
-        current_binary_max_bool=[Bool(f"current_binary_max_{i}") for i in range(len(current_binary_max))]
-        # for i in range(len(current_binary_max)):        #current_max needs to be in z3
-        #     if(current_binary_max[i]=='0'):
-        #         current_binary_max_bool.append(Bool(f"current_binary_max_{i}"))
-        current_binary_max_bool_list = []
-        for i in range(len(current_binary_max)):
-            if current_binary_max[i] == '0':
-                current_binary_max_bool_list.append(Not(current_binary_max_bool[i]))
-            else:
-                current_binary_max_bool_list.append(current_binary_max_bool[i])
+        while(lastDistanceFound - lastDistanceFailed > 1):
+            # print("lastDistances: ", lastDistanceTrial, lastDistanceFound, lastDistanceFailed)
             
+            # if (solutionFound):
+            #     lastDistanceTrial = (lastDistanceFound + lastDistanceFailed) // 2
+            # else:
+            lastDistanceTrial = (lastDistanceFailed + lastDistanceFound) // 2
+                
+            print("last_distance_failed",lastDistanceFailed)
+            print("last_distance_found",lastDistanceFound)
+            print("last_distance_trial", lastDistanceTrial)
+            print("found",solutionFound)
+
+            # creating a new level
+            solver.push()
+            print("Try for: ", lastDistanceTrial)
+
+            # binary encoding of the max distrance
+            current_binary_max = binary_encoding(lastDistanceTrial, math.ceil(math.log2(lastDistanceTrial + 1)))
+            # creting the z3 binary values
+            current_binary_max_bool=[Bool(f"current_binary_max_{i}") for i in range(len(current_binary_max))]
+            # imposing that the binary encoding is equal to the number
+            current_binary_max_bool_list = []
+            for i in range(len(current_binary_max)):
+                if current_binary_max[i] == '0':
+                    current_binary_max_bool_list.append(Not(current_binary_max_bool[i]))
+                else:
+                    current_binary_max_bool_list.append(current_binary_max_bool[i])
+            
+            solver.add(And(current_binary_max_bool_list))
+            
+            # constraint on the distances: each distance must be less or equal w.r.t. the one for which we are trying
+            for i in range(m):
+                res = check_distances(solver,n,m,distances,current_binary_max_bool,i)
+                # we add to the solver the bit representing the sign of the subtraction
+                # between the maximum distance and the sum of the distances travelled by each courier
+                solver.add(res)
+ 
+            # check if there is a solution
+            checkModel = solver.check()
+            print("checkModel = ", checkModel)
+            if str(checkModel) == 'sat':
+                # solutionFound = True
+                model = solver.model()
+                # printer(model,"weight",m,n-m+3,depth_weight)
+                printer(model,"tour",m,n-m+3,depth_tours)
+                matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
+                #printer(model,"distance",m,n-m+3,depth_tours)
+                lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
+                print("lastDistanceFound: ", lastDistanceFound)
+            else:
+                # solutionFound = False
+                lastDistanceFailed = lastDistanceTrial
+
+            solver.pop()
+            print('-'*10)
+
+        print("Last solution found: ", lastDistanceFound)
+        printer(model,"tour",m,n-m+3,depth_tours)
+        printer(model,"weight",m,n-m+3,depth_weight)
+        printer(model,"distance",m,n-m+2,depth_distance)
         
-        solver.add(And(current_binary_max_bool_list))
-        for i in range(m):
-            res = check_distances(solver,n,m,distances,current_binary_max_bool,i)
-            solver.add(res)
-
-        # if the algorithm cannot half the distance
-        # we must impose that 
-
-        checkModel = solver.check()
-        #print()
-        if str(checkModel) == 'sat':
-            solutionFound = True
-            model = solver.model()
-            # printer(model,"weight",m,n-m+3,depth_weight)
-            printer(model,"tour",m,n-m+3,depth_tours)
-            matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-            printer(model,"distance",m,n-m+3,depth_tours)
-            lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
-            print("lastDistanceFound: ", lastDistanceFound)
-        else:
-            solutionFound = False
-            lastDistanceFailed = lastDistanceTrial
-
-        solver.pop()
-        print('-'*10)
-
-    # solver.pop()
-    # solver.check()
-    # model = solver.model()
-    # printer(model,"tour",m,n-m+3,depth_tours)
-    
 
 if __name__ == "__main__":
     main()
