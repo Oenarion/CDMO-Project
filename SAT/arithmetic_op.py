@@ -45,14 +45,14 @@ def binary_adder_(a,b,name,solver):
     for i in range(len(d)):
         #double implication
         solver.add((d[i] == \
-                    Or(And(a[i],Not(b[i]),Not(c[i])),\
-                        And(Not(a[i]),b[i],Not(c[i])),\
-                        And(Not(a[i]),Not(b[i]),c[i]),\
-                        And(a[i],b[i],c[i]))))
+                    Or(And(a[i],Not(b[i]),Not(c[i+1])),\
+                        And(Not(a[i]),b[i],Not(c[i+1])),\
+                        And(Not(a[i]),Not(b[i]),c[i+1]),\
+                        And(a[i],b[i],c[i+1]))))
 
-        if(i>0):
-            solver.add(c[i-1] ==\
-                Or(And(a[i],b[i]),And(a[i],c[i]),And(b[i],c[i])))
+        #if(i>0):
+        solver.add(c[i] ==\
+            Or(And(a[i],b[i]),And(a[i],c[i+1]),And(b[i],c[i+1])))
     
     d.insert(0,c[0])
     return (d)
@@ -60,7 +60,7 @@ def binary_adder_(a,b,name,solver):
 def binary_subtraction(enc1,enc2,name,solver):
     len_a = len(enc1)
     len_b = len(enc2)
-    max_len = max(len_a,len_b)+1
+    max_len = max(len_a,len_b)#+1
 
     delta = max_len - len_a
     a = [Bool(f"paddingSub1_{name}_{k}") for k in range(delta)]
@@ -82,19 +82,19 @@ def binary_subtraction(enc1,enc2,name,solver):
     #     solver.add(Implies(b[i], Not(reversed_enc[i])))
     #     solver.add(Implies(Not(b[i]), reversed_enc[i]))    
     reversed_enc=[]
-    for i in b:
-        reversed_enc.append(Not(i))
+    for i in range(len(b)):
+        reversed_enc.append(Not(b[i]))
     
     
     bool = [Bool(f"{name}_bit_to_add") for j in range(1)]
     solver.add(bool)
     complement2 = binary_adder_(reversed_enc,bool,f"{name}_temp",solver)
     # removing the bit added during the operation, because during the 2'complement operation we must mantein the same number of bits 
-    complement2[len(complement2)-len(reversed_enc):]
+    # complement2[len(complement2)-len(reversed_enc):]
     # for i in range(delta):
     #     solver.add(reversed_enc[i])
 
-    return binary_adder_(a,reversed_enc,f"final_{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
+    return binary_adder_(a,complement2[1:],f"final_{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
 
 def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities):       #TO CHECK
     
@@ -176,11 +176,12 @@ def create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
                     solver.add(Implies(And(And(bool_enc1),And(bool_enc2)), And(bool_distance_enc)))
  
 def check_distances(solver,n,m,distances,maximum,index):
-    binary_sum=binary_adder_(distances[index][0],distances[index][1],f"distanceAdder{index}",solver)
+    binary_sum=binary_adder_(distances[index][0],distances[index][1],f"DistanceAdder{index}",solver)
     for j in range(2,n-m+2):
-        binary_sum=binary_adder_(distances[index][j],binary_sum,f"distanceAdder{index}_{j}",solver)
-    result=binary_subtraction(maximum,binary_sum,f"distanceSub{index}",solver)
-    solver.add(result)        
+        binary_sum=binary_adder_(distances[index][j],binary_sum,f"DistanceAdder{index}_{j}",solver)
+    result=binary_subtraction(maximum,binary_sum,f"DistanceSub{index}",solver)
+    #solver.add(result)    
+    return result    
            
 def find(index,n,m,tours,depth_tours):
     """

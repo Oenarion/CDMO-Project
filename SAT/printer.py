@@ -65,7 +65,11 @@ def getMatrix(model,string_name,i,j,k):
             val = model[decl]
 
             #i,j,k
-            results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
+            try:
+                results.append((int(parts[0]),int(parts[1]),int(parts[2]), bool(val)))
+            except:
+                print(name, parts[0], parts[1], parts[2])
+                exit(0)
             # stampa il nome e il valore della variabile
             #print(f"{name}: {val}")
 
