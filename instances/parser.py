@@ -4,8 +4,15 @@ def parseInstance(fileName):
     return a tuple containing m, n, l, s, D
     D is a list of lists
     '''
-
-    file = open(fileName, "r")
+    # try:
+    #     file = open(fileName, "r")
+    # except:
+    #     print("error, file not found")
+    try:
+        file = open(f"instances/{fileName}", "r")
+    except:
+        print("error, file not found")
+        exit(0)
     content = file.read()
     rows = content.split('\n')
     m = int(rows[0])
@@ -43,3 +50,9 @@ def getMinizincInstance(fileName):
         res += f"\n"
     return res
 
+def main():
+    print(parseInstance('instances/inst05.dat'))
+
+if __name__ == "__main__":
+    main()
+    

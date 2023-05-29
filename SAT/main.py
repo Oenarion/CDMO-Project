@@ -5,31 +5,40 @@ import numpy as np
 from cardinality_constraints import *
 from printer import *
 from arithmetic_op import *
-
-import os
+import time
+from multiprocessing import Process
 import sys
+import json
 # currentWorkingDirectory = os.path.abspath(os.getcwd())
 # programName = sys.argv[0]
 # print(currentWorkingDirectory, programName)
 
 # exit(0)
 #pathParser = currentWorkingDirectory + programName.split("/")
-sys.path.insert(0, 'instances')
-from parser import *
+
+try:
+    sys.path.insert(0, 'instances')
+    from parser import *
+except:
+    print("Please move into the main folder of the project :)")
+
+obj = -1
+sol = []
+
 
 #input model
-m = 3 #couriers
-n = 7 #items
-l = [15, 10, 7] #max load per courier
-s= [3,2, 6, 8, 5, 4, 4] #weight of each itemreversed_enc
-D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
-    [3, 0, 4, 3, 4, 7, 7, 3],
-    [3, 4, 0, 7, 6, 3, 5, 3],
-    [6, 3, 7, 0, 3, 6, 6, 4],
-    [5, 4, 6, 3, 0, 3, 3, 3],
-    [6, 7, 3, 6, 3, 0, 2, 4],
-    [6, 7, 5, 6, 3, 2, 0, 4],
-    [2, 3, 3, 4, 3, 4, 4, 0]]
+# m = 3 #couriers
+# n = 7 #items
+# l = [15, 10, 7] #max load per courier
+# s= [3,2, 6, 8, 5, 4, 4] #weight of each itemreversed_enc
+# D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
+#     [3, 0, 4, 3, 4, 7, 7, 3],
+#     [3, 4, 0, 7, 6, 3, 5, 3],
+#     [6, 3, 7, 0, 3, 6, 6, 4],
+#     [5, 4, 6, 3, 0, 3, 3, 3],
+#     [6, 7, 3, 6, 3, 0, 2, 4],
+#     [6, 7, 5, 6, 3, 2, 0, 4],
+#     [2, 3, 3, 4, 3, 4, 4, 0]]
 
 def maxNumberItem(s, l):
     max_l = max(l)
@@ -59,7 +68,17 @@ for var_name, value in model:
 
 
 def main():
+    global obj
+    global sol
     #m, n, l, s, D = parseInstance("instances/inst01.dat")
+    
+    try:
+        fileName = sys.argv[1]
+    except:
+        print("Give me the name of the file like first parameter")
+        exit(0)
+
+    m, n, l, s, D = parseInstance(fileName)
 
     solver = Solver() # create a solver s
 
@@ -147,12 +166,14 @@ def main():
         printer(model,"tour",m,n-m+3,depth_tours)
         printer(model, "distance", m, n-m+2, depth_distance)
         matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-        
+
         lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
         lastDistanceFailed = 0
         lastDistanceTrial = lastDistanceFound // 2
         solutionFound = True
 
+        obj = lastDistanceFound
+        sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
         print("lastDistanceFound: ", lastDistanceFound)
 
         
@@ -205,6 +226,8 @@ def main():
                 matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
                 #printer(model,"distance",m,n-m+3,depth_tours)
                 lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
+                obj = lastDistanceFound
+                sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
                 print("lastDistanceFound: ", lastDistanceFound)
             else:
                 # solutionFound = False
@@ -213,13 +236,40 @@ def main():
             solver.pop()
             print('-'*10)
 
-        print("Last solution found: ", lastDistanceFound)
+        print("Last solution found: ", obj)
+        print("sol :", sol)
         printer(model,"tour",m,n-m+3,depth_tours)
         printer(model,"weight",m,n-m+3,depth_weight)
         printer(model,"distance",m,n-m+2,depth_distance)
         
 
 if __name__ == "__main__":
+    thread = Process(target=main, args=())
+    startingTime = time.time()
+    thread.start()
     main()
+
+    while(thread.is_alive() and time.time()-startingTime <= 300):
+        continue
+
+    if thread.is_alive():
+        thread.terminate()
+        terminationTime = 300
+        optimal = "false"
+        print("thread killed")
+    else:
+        terminationTime = math.trunc((time.time() - startingTime))
+        optimal = "true"
+
+    print("execution time: ", terminationTime)
+
+    jsonData = {"sat":{
+            "time": str(terminationTime),
+            "optimal": optimal,
+            "obj": str(obj),
+            "sol": sol
+        }}
     
-    
+    jsonString = json.dumps(jsonData)
+    print(jsonString)
+
