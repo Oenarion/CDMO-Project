@@ -21,6 +21,7 @@ try:
     from parser import *
 except:
     print("Please move into the main folder of the project :)")
+    exit(0)
 
 obj = -1
 sol = []

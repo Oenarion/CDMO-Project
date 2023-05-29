@@ -23,7 +23,7 @@ def parseInstance(fileName):
     D = []
     for i in range(4, len(rows)-1):
         parsedLine = parseLine(rows[i])
-        D.append(parsedLine[:len(parsedLine)-1])
+        D.append(parsedLine)
 
     return (m, n, l, s, D)
 
@@ -51,7 +51,7 @@ def getMinizincInstance(fileName):
     return res
 
 def main():
-    print(parseInstance('instances/inst05.dat'))
+    print(parseInstance('inst01.dat'))
 
 if __name__ == "__main__":
     main()
