@@ -5,6 +5,7 @@ import time
 import math
 import json
 
+
 try:
     sys.path.insert(0, 'instances')
     from parser import *
@@ -49,7 +50,7 @@ except:
     exit(0)
 
 model = Model("./cp/MCP_cp.mzn")
-gecode = Solver.lookup("gecode")
+gecode = Solver.lookup("chuffed")
 instance = Instance(gecode, model)
 
 startingTime = time.time()
@@ -61,11 +62,33 @@ instance['l'] = l
 instance['s'] = s
 instance['D'] = D
 
-
-timeout = timedelta(seconds=math.ceil(time.time()-startingTime))
+print('heiii')
+timeout = timedelta(seconds=300-math.ceil(time.time()-startingTime))
 
 result = instance.solve(timeout=timeout)
+
+print(result)
+
 jsonData = createJson(result)
     
 jsonString = json.dumps(jsonData)
 print(jsonString)
+
+#rimozione stringa
+if "inst0" in fileName:
+    fileName = fileName[5:6]
+else:
+    fileName = fileName[4:6]
+
+print(fileName)
+
+#creazione del file JSON
+
+try:
+    f = open(fileName + ".json", "w")
+    f.write(jsonString)
+    f.close()
+except Exception as e:
+    print(e)
+    print("errore scrittura file json")
+
