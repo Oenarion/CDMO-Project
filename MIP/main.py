@@ -38,8 +38,44 @@
 # c1 = [0,0,0,0] #-> queste tutte da assegnare
 # c2 = [0,0,0,0]
 
-# c1 = [1,2,5]
-# c2 = [4,3]
+# c1 = [1,2,5][4,3,#][-,-,-]
+# c2 = [4,3] 
+
+#p1=0,p2=1,3,4, -> pacchi
+
+# c1 = [-,-,-][-,-,-][-,-,-]
+# c2 = [-,-,-]
+# c3 = [-,-,-]
+
+# pacco_1 = lpvariable (0->8)
+# ...
+# pacco_m
+# somma(valori pacchi) = 1+2+3..+7 == somma teorica senza duplicati
+
+#0-8 in assegnamento
+#3 pacchi -> 1,2,3 -> somma 6 #una volta fatto assegnamento, elimino duplicati, se assegnamento ok bene
+#3 pacchi -> 6,7,8 -> somma 21
+#[-,-,-][-,-,-][-,-,-]
+
+# [p4,-,p1] #possiamo fare un compattamento verso sx (ma si creano tante soluzioni equivalenti...)
+# [-,-,p2]
+# [-,-,p3]
+
+
+#----
+#nxmxm terza dimensione = numero del pacco (NON IN BINARIO)
+
+
+#[1,2,0,0] -> indici con conversione binario-intero 
+#[3,0,0,0]
+#[4,0,0,0]
+
+#calcolo peso con interi
+#calcolo distanza con interi
+#objective function con interi minimizza(minima somma)
+
+
+
 
 #pesi = 
 
@@ -67,8 +103,15 @@ prob = LpProblem("Problema", LpMinimize)
 
 second_dimension = n-m+3
 
-# Crea le variabili del problema
-tours = [[LpVariable(f"tour{i}_{j}", lowBound=0, upBound=n, cat=LpInteger) for j in range(second_dimension)] for i in range(m)]
+# Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
+tours = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+
+#vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
+#saltiamo il primo piano perchè è starting point (=0)
+for z in range(1,n+1):
+    #vado a sommare tutto il piano
+    prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)])==1
+
 
 # Aggiungi il constraint "all different"
 prob += lpSum(tours) == sum([i for i in range(n+1)])
@@ -84,6 +127,7 @@ prob += lpSum(lista) == 6
 
 # Risolvi il problema
 prob.solve()
+
 
 
 
