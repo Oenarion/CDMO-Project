@@ -1,3 +1,7 @@
+import numpy as np
+
+
+
 #-m- corrieri
 #-m- capacità
 #-n- pacchi
@@ -133,7 +137,21 @@ prob.solve()
 
 
 
-
-# Stampa i valori delle variabili
+#Stampa i valori delle variabili
 for var in prob.variables():
     print(f"{var.name} = {var.varValue}")
+    
+
+
+# depthSearch=np.zeros((m,second_dimension))
+
+# for row in range(m):
+#     for column in range(second_dimension):
+#         temp=0
+#         for var in prob.variables():
+#             if f"tour{row}_{column}" in var.name:
+#                 if var.varValue==1.0:
+#                     temp=int(var.name.split("_")[-1])                
+#         depthSearch[row][column]=temp
+    
+# print(depthSearch)
