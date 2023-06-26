@@ -139,10 +139,10 @@ prob = LpProblem("Problema", LpMinimize)
 
 
 # Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
-#tours = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+# tours = [[[LpVariable(f"tours_{i}_{j}_{k}",lowBound=0.0, upBound=1.0, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
 
 
-tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0, upBound=1, cat=LpInteger)
+tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
 
 
 #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
@@ -170,11 +170,19 @@ for i in range(m):
 
 
 #check su ordine assegnamenti - no buchi
+# for i in range(m): #per ogni corriere
+#     for j in range(2,second_dimension): #mi muovo orizzontalmente sul cubo
+#         #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
+#         prob+=(lpSum([tours[i][jj][k] for jj in range(j,second_dimension)]for k in range(1,n+1))>= \
+#             (lpSum([tours[i][jjj][k] for jjj in range(second_dimension)]for k in range(1,n+1))-j+1))
+
+# for each courier, keep two consecutive columns and sum all the elements on each column
+# then check that the first is >= the second, if it is not the case then there is a 0 and then a 1
+# so the courier returns to the home and then deliver another item, it is not possible
 for i in range(m): #per ogni corriere
-    for j in range(2,second_dimension): #mi muovo orizzontalmente sul cubo
+    for j in range(2,second_dimension-1): #mi muovo orizzontalmente sul cubo
         #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
-        prob+=lpSum([tours[i][jj][k] for jj in range(j,second_dimension)]for k in range(1,n+1))<= \
-            (lpSum([tours[i][jjj][k] for jjj in range(second_dimension)]for k in range(1,n+1))-j+1)
+        prob+=lpSum([tours[i][j][k] for k in range(1,n+1)])>= lpSum([tours[i][j+1][k] for k in range(1,n+1)])
 
 
 
@@ -244,29 +252,31 @@ maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
 
 # Risolvi il problema
 prob.solve()
-
-prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
-
-
+print("Status:", LpStatus[prob.status])
+# prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
 
 
-#Stampa i valori delle variabili
-for var in prob.variables():
-    print(f"{var.name} = {var.varValue}",type(var.varValue))
-    #if "distance_of_tours" in var.name:
-    #    print(f"{var.name} = {var.varValue}")
-    
+if ('Infeasible' in str(LpStatus[prob.status])):
+    pass
+else:
+
+    #Stampa i valori delle variabili
+    for var in prob.variables():
+        print(f"{var.name} = {var.varValue}",type(var.varValue))
+        #if "distance_of_tours" in var.name:
+        #    print(f"{var.name} = {var.varValue}")
+        
 
 
-depthSearch=np.zeros((m,second_dimension))
+    depthSearch=np.zeros((m,second_dimension))
 
-for row in range(m): #0:3
-     for column in range(second_dimension): #0:7
-         temp=0
-         for var in prob.variables():
-             if f"tours_{row}_{column}" in var.name:
-                 if var.varValue==1.0:
-                     temp=int(var.name.split("_")[-1])                
-         depthSearch[row][column]=temp
-    
-print(depthSearch)
+    for row in range(m): #0:3
+        for column in range(second_dimension): #0:7
+            temp=0
+            for var in prob.variables():
+                if f"tours_{row}_{column}" in var.name:
+                    if var.varValue==1.0:
+                        temp=int(var.name.split("_")[-1])                
+            depthSearch[row][column]=temp
+        
+    print(depthSearch)
