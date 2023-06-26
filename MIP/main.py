@@ -139,20 +139,44 @@ prob = LpProblem("Problema", LpMinimize)
 
 
 # Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
-#tours_temp = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+#tours = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
 
 
-tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), 0, 1, LpInteger)
+tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0, upBound=1, cat=LpInteger)
+
+
 #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
 #saltiamo il primo piano perchè è starting point (=0)
 for z in range(1,n+1):
     #vado a sommare tutto il piano
-    prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1
+    prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1.0
+    #prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) <= 1
 
 #stesso vincolo ma sulla profondità
 for i in range(m):
     for j in range(second_dimension):
-        prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1
+        prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1.0
+        #prob += lpSum([tours[i][j][z] for z in range(n+1)]) <= 1
+
+#ulteriore vincolo: prima colonna solo origin point
+for i in range(m):
+    prob+=tours[i][0][0] == 1.0
+    #prob+=tours[i][0][0] <= 1
+
+#ulteriore vincolo: seconda colonna almeno un pacco
+for i in range(m):
+    prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) == 1.0
+    #prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) <= 1
+
+
+#check su ordine assegnamenti - no buchi
+for i in range(m): #per ogni corriere
+    for j in range(2,second_dimension): #mi muovo orizzontalmente sul cubo
+        #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
+        prob+=lpSum([tours[i][jj][k] for jj in range(j,second_dimension)]for k in range(1,n+1))<= \
+            (lpSum([tours[i][jjj][k] for jjj in range(second_dimension)]for k in range(1,n+1))-j+1)
+
+
 
 #checking weights, sum of the sum of the depth of our matrix (first dimension excluded), multiplied by the weight of each package, 
 # trivially if the sum is 1 then we'll get the weight as result and we have to check that the sum of all of this packages is <= capacity of the courier
@@ -160,10 +184,10 @@ for i in range(m):
     prob+=lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])<=l[i]
     
 
-a=LpVariable("a",cat=LpBinary)
-b=LpVariable("b",lowBound=0,upBound=1,cat=LpInteger)
+# a=LpVariable("a",cat=LpBinary)
+# b=LpVariable("b",lowBound=0,upBound=1,cat=LpInteger)
 
-prob+=b==(lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])+1-lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)]))
+# prob+=b==(lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])+1-lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)]))
 
 #sommatoria
 # i_00 * i_10 * d_00 +
@@ -173,8 +197,8 @@ prob+=b==(lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1]
 
 distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),0,None,LpInteger)    #TO DO: CHANGE UPPER BOUND !!!!!
     
-for i in range(m):
-    prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
+# for i in range(m):
+#     prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
 
     
 #itero per ogni corriere
@@ -221,16 +245,16 @@ maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
 # Risolvi il problema
 prob.solve()
 
-
+prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
 
 
 
 
 #Stampa i valori delle variabili
 for var in prob.variables():
-    #print(f"{var.name} = {var.varValue}")
-    if "distance_of_tours" in var.name:
-        print(f"{var.name} = {var.varValue}")
+    print(f"{var.name} = {var.varValue}",type(var.varValue))
+    #if "distance_of_tours" in var.name:
+    #    print(f"{var.name} = {var.varValue}")
     
 
 
