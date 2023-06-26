@@ -112,14 +112,37 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [6, 7, 5, 6, 3, 2, 0, 4],
     [2, 3, 3, 4, 3, 4, 4, 0]]
 
-# Crea un problema
-prob = LpProblem("Problema", LpMinimize)
+
+#preprocessing of D, we need to have the origin as first row/column for our algorithm to work correctly
+
+D.insert(0,D[-1])
+D.pop()
+D=np.array(D)
+D=np.insert(D,0,D[:,-1],axis=1)
+D=D[:,:-1]
+D=D.tolist()
+#print(D)
+
+#start of the problem
 
 second_dimension = n-m+3
 
-# Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
-tours = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+third_dimension=[i for i in range(n+1)]
 
+numberOfCouriers=[i for i in range(m)]
+
+numberOfPosition=[i for i in range(second_dimension)]
+
+distances = makeDict([third_dimension , third_dimension], D, 0)
+
+prob = LpProblem("Problema", LpMinimize)
+
+
+# Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
+#tours_temp = [[[LpVariable(f"tour{i}_{j}_{k}",lowBound=0, upBound=1, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+
+
+tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), 0, 1, LpInteger)
 #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
 #saltiamo il primo piano perchè è starting point (=0)
 for z in range(1,n+1):
@@ -131,38 +154,59 @@ for i in range(m):
     for j in range(second_dimension):
         prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1
 
+#checking weights, sum of the sum of the depth of our matrix (first dimension excluded), multiplied by the weight of each package, 
+# trivially if the sum is 1 then we'll get the weight as result and we have to check that the sum of all of this packages is <= capacity of the courier
+for i in range(m):
+    prob+=lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])<=l[i]
+    
+
+a=LpVariable("a",cat=LpBinary)
+b=LpVariable("b",lowBound=0,upBound=1,cat=LpInteger)
+
+prob+=b==(lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])+1-lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)]))
+
 #sommatoria
 # i_00 * i_10 * d_00 +
 # i_00 * i_11 * d_01 +
 # i_00 * i_12 * d_02 +
 # i_00 * i_13 * d_03 +
 
+distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),0,None,LpInteger)    #TO DO: CHANGE UPPER BOUND !!!!!
+    
+for i in range(m):
+    prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
+
+    
 #itero per ogni corriere
-for c in range(m):
+# for c in range(m):
 
-    next_c = []
+#     next_c = []
 
-    #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
-    for i in range(second_dimension):
-        for j in range(n):
-            #recupero il valore della Lp variable corrispondente a i,j
-            current_i = tours[c][i][j]
+#     #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
+#     for i in range(second_dimension):
+#         for j in range(n):
+#             #recupero il valore della Lp variable corrispondente a i,j
+#             current_i = tours[c][i][j]
 
-            #now itero sulla colonna successiva
+#             #now itero sulla colonna successiva
             
-            for jj in range(n):
-                if j==0 and jj==0:
-                    distance = D[n][n]
-                elif j==0 and jj!=0:
-                    distance = D[n][jj-1]
-                elif j!=0 and jj==0:
-                    distance = D[j-1][n]
-                else:
-                    distance = D[j-1][jj-1]
+#             for jj in range(n):
+#                 if j==0 and jj==0:
+#                     distance = D[n][n]
+#                 elif j==0 and jj!=0:
+#                     distance = D[n][jj-1]
+#                 elif j!=0 and jj==0:
+#                     distance = D[j-1][n]
+#                 else:
+#                     distance = D[j-1][jj-1]
 
-                next_c.append(current_i * tours[c][i+1][jj] * distance)
+#                 #next_c.append
+#                 prob+=lpSum(current_i * tours[c][i+1][jj] * distance)
+                
        
-    lpSum(next_c) #########QUESTO DA CONTINUARE !!!!!!!!
+#     lpSum(next_c) #########QUESTO DA CONTINUARE !!!!!!!!
+
+
 
 
 #variabile per objective function (minimizziamo la riga più grande)
@@ -171,7 +215,7 @@ maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
 #aggiungo il vincolo per la maxTravel
 #prob += lpSum(#sommatoria) == maxTravel
 
-prob.setObjective()
+# prob.setObjective()
 
 
 # Risolvi il problema
@@ -184,7 +228,9 @@ prob.solve()
 
 #Stampa i valori delle variabili
 for var in prob.variables():
-    print(f"{var.name} = {var.varValue}")
+    #print(f"{var.name} = {var.varValue}")
+    if "distance_of_tours" in var.name:
+        print(f"{var.name} = {var.varValue}")
     
 
 
@@ -194,7 +240,7 @@ for row in range(m): #0:3
      for column in range(second_dimension): #0:7
          temp=0
          for var in prob.variables():
-             if f"tour{row}_{column}" in var.name:
+             if f"tours_{row}_{column}" in var.name:
                  if var.varValue==1.0:
                      temp=int(var.name.split("_")[-1])                
          depthSearch[row][column]=temp
