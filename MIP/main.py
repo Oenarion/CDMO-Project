@@ -97,6 +97,14 @@ import numpy as np
 
 #_________________________________________
 
+def forceAnd(prob,name,v0,v1):
+    d = LpVariable(name,lowBound=0,upBound=1,cat=LpInteger) # risultato
+    prob += d<=v0
+    prob += d<=v1
+    prob += d>= v0+v1-1
+    prob += d>=0
+    return d
+
 from pulp import *
 
 m = 3 #couriers
@@ -112,8 +120,9 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [6, 7, 5, 6, 3, 2, 0, 4],
     [2, 3, 3, 4, 3, 4, 4, 0]]
 
-
+#--SUPER IMPORTANTE!!!!--------
 #preprocessing of D, we need to have the origin as first row/column for our algorithm to work correctly
+#--SUPER IMPORTANTE!!!!--------
 
 D.insert(0,D[-1])
 D.pop()
@@ -208,35 +217,25 @@ distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),0,None
 # for i in range(m):
 #     prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
 
-    
+#this is the proof that addition can be done
+#prob+=(tours[0][1][0] + tours[0][0][1]) >=2
+
+
 #itero per ogni corriere
-# for c in range(m):
+for c in range(m): 
+     acc_distances = [] #accumula per ogni corriere la distanza
+     #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
+     for i in range(second_dimension-1): #seconda dimensione, x
+         for j in range(n+1): #3a dimensione -> z
+             #recupero il valore della Lp variable corrispondente a i,j
+             current_i = tours[c][i][j] #recupero flag 0-1 assegnato
+             #now itero sulla colonna successiva
+             for jj in range(n+1): #iteriamo di nuovo su terza dimensione
+                 #next_c.append
 
-#     next_c = []
-
-#     #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
-#     for i in range(second_dimension):
-#         for j in range(n):
-#             #recupero il valore della Lp variable corrispondente a i,j
-#             current_i = tours[c][i][j]
-
-#             #now itero sulla colonna successiva
+                acc_distances.append(forceAnd(prob,f"{c}_{i}_{j}_{i+1}_{jj}",current_i,tours[c][i+1][jj])* D[j][jj])
             
-#             for jj in range(n):
-#                 if j==0 and jj==0:
-#                     distance = D[n][n]
-#                 elif j==0 and jj!=0:
-#                     distance = D[n][jj-1]
-#                 elif j!=0 and jj==0:
-#                     distance = D[j-1][n]
-#                 else:
-#                     distance = D[j-1][jj-1]
-
-#                 #next_c.append
-#                 prob+=lpSum(current_i * tours[c][i+1][jj] * distance)
-                
-       
-#     lpSum(next_c) #########QUESTO DA CONTINUARE !!!!!!!!
+     prob+= distance_of_tours[c] == lpSum(acc_distances) 
 
 
 
@@ -255,6 +254,10 @@ prob.solve()
 print("Status:", LpStatus[prob.status])
 # prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
 
+print("-----------------")
+for row in D:
+    print(row)
+print("-----------------")
 
 if ('Infeasible' in str(LpStatus[prob.status])):
     pass
