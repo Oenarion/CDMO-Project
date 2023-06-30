@@ -1,5 +1,5 @@
 import numpy as np
-
+import re #string mather
 
 
 #-m- corrieri
@@ -105,8 +105,49 @@ def forceAnd(prob,name,v0,v1):
     prob += d>=0
     return d
 
+def getMax(prob,name,lowerbound,upperbound,distances):
+
+    y = LpVariable(name,lowBound=lowerbound,upBound=upperbound,cat=LpInteger) # risultato
+
+    ds = []
+
+    counter = 0
+    for elem in distances:
+        d = LpVariable(f"d_{counter}_{name}",lowBound=0,upBound=1,cat=LpInteger) # variabile di appoggio
+        print(d)
+        #prob += d
+        ds.append(d)
+        prob += y >= elem
+        #prob += y <= elem + (upperbound - lowerbound)*d
+        prob += y <= elem + (upperbound - lowerbound)*(1-d)
+        
+        
+        counter += 1 
+    
+    prob += lpSum(ds) == 1
+
+    return y
+
+
 from pulp import *
 
+"""
+___________________TEST STAMPA GETMAX()
+prob = LpProblem("Problema", LpMinimize)
+ddds = [23,45,78,90,3,45,6]
+getMax(prob,"dd",0,2000,ddds)
+
+prob.solve()
+
+for var in prob.variables():
+        if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
+            print(f"{var.name} = {var.varValue}",type(var.varValue))
+
+
+exit(0)
+"""
+
+"""
 m = 3 #couriers
 n = 7 #items
 l = [15, 10, 7] #max load per courier
@@ -119,6 +160,16 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [6, 7, 3, 6, 3, 0, 2, 4],
     [6, 7, 5, 6, 3, 2, 0, 4],
     [2, 3, 3, 4, 3, 4, 4, 0]]
+"""
+try:
+    sys.path.insert(0, 'instances')
+    from parser import *
+except:
+    print("Please move into the main folder of the project :)")
+    exit(0)
+
+m, n, l, s, D = parseInstance("inst02.dat")
+
 
 #--SUPER IMPORTANTE!!!!--------
 #preprocessing of D, we need to have the origin as first row/column for our algorithm to work correctly
@@ -129,6 +180,11 @@ D.pop()
 D=np.array(D)
 D=np.insert(D,0,D[:,-1],axis=1)
 D=D[:,:-1]
+
+#calcolo valore di upper-bound per la funzione di max
+upper_bound_distances = sum(D[0,:]) + sum(D[:,0]) 
+#print(upper_bound_distances)
+
 D=D.tolist()
 #print(D)
 
@@ -145,6 +201,8 @@ numberOfPosition=[i for i in range(second_dimension)]
 distances = makeDict([third_dimension , third_dimension], D, 0)
 
 prob = LpProblem("Problema", LpMinimize)
+
+
 
 
 # Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
@@ -212,8 +270,11 @@ for i in range(m):
 # i_00 * i_12 * d_02 +
 # i_00 * i_13 * d_03 +
 
-distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),0,None,LpInteger)    #TO DO: CHANGE UPPER BOUND !!!!!
+#distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),lowBound=0,upBound=upper_bound_distances,cat=LpInteger)    #TO DO: CHANGE UPPER BOUND !!!!!
     
+distance_of_tours = [LpVariable(f"distance_of_tours_{i}",lowBound=0,upBound=upper_bound_distances,cat=LpInteger) for i in range(m)]
+
+
 # for i in range(m):
 #     prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
 
@@ -237,17 +298,38 @@ for c in range(m):
             
      prob+= distance_of_tours[c] == lpSum(acc_distances) 
 
+"""
+uno = LpVariable("distance_1",0,upper_bound_distances,LpInteger) 
+due = LpVariable("distance_2",0,upper_bound_distances,LpInteger) 
+tre = LpVariable("distance_3",0,upper_bound_distances,LpInteger) 
 
+prob += uno == distance_of_tours[0]
+prob += due == distance_of_tours[1]
+prob += tre == distance_of_tours[2]
+"""
 
 
 #variabile per objective function (minimizziamo la riga più grande)
-maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
+#maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
+
+#maxTravel = getMax(prob,"max_d",0,upper_bound_distances,distance_of_tours)
+
+"""
+probe = LpVariable("probe",lowBound=0,upBound=100,cat=LpInteger) # risultato
+prob += probe >= 50
+"""
+
+#getMax(prob,"dd",0,upper_bound_distances,distance_of_tours)
 
 #aggiungo il vincolo per la maxTravel
 #prob += lpSum(#sommatoria) == maxTravel
 
-# prob.setObjective()
+#prob.setObjective(getMax(prob,"max_d",0,upper_bound_distances,distance_of_tours))
+prob.setObjective(getMax(prob,"dd",0,upper_bound_distances,distance_of_tours))
 
+print("-----------------")
+print(prob.objective)
+print("-----------------")
 
 # Risolvi il problema
 prob.solve()
@@ -265,7 +347,9 @@ else:
 
     #Stampa i valori delle variabili
     for var in prob.variables():
-        print(f"{var.name} = {var.varValue}",type(var.varValue))
+        if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
+            print(f"{var.name} = {var.varValue}",type(var.varValue))
+
         #if "distance_of_tours" in var.name:
         #    print(f"{var.name} = {var.varValue}")
         
@@ -283,3 +367,11 @@ else:
             depthSearch[row][column]=temp
         
     print(depthSearch)
+
+    #stampo controcalcolo delle distanze
+    for c in range(m): #per ogni corriere
+        
+        print(sum([D[int(depthSearch[c,i])][int(depthSearch[c,i+1])] for i in range(second_dimension-1)]))
+
+
+
