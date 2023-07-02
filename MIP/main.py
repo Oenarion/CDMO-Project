@@ -1,6 +1,16 @@
 import numpy as np
+from pulp import *
 import re #string mather
+import sys
 
+
+
+
+
+# solver_list = listSolvers()
+
+# print(solver_list)
+# exit(1)
 
 #-m- corrieri
 #-m- capacità
@@ -129,8 +139,6 @@ def getMax(prob,name,lowerbound,upperbound,distances):
     return y
 
 
-from pulp import *
-
 """
 ___________________TEST STAMPA GETMAX()
 prob = LpProblem("Problema", LpMinimize)
@@ -161,6 +169,7 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [6, 7, 5, 6, 3, 2, 0, 4],
     [2, 3, 3, 4, 3, 4, 4, 0]]
 """
+
 try:
     sys.path.insert(0, 'instances')
     from parser import *
@@ -168,210 +177,210 @@ except:
     print("Please move into the main folder of the project :)")
     exit(0)
 
-m, n, l, s, D = parseInstance("inst02.dat")
-
-
-#--SUPER IMPORTANTE!!!!--------
-#preprocessing of D, we need to have the origin as first row/column for our algorithm to work correctly
-#--SUPER IMPORTANTE!!!!--------
-
-D.insert(0,D[-1])
-D.pop()
-D=np.array(D)
-D=np.insert(D,0,D[:,-1],axis=1)
-D=D[:,:-1]
-
-#calcolo valore di upper-bound per la funzione di max
-upper_bound_distances = sum(D[0,:]) + sum(D[:,0]) 
-#print(upper_bound_distances)
-
-D=D.tolist()
-#print(D)
-
-#start of the problem
-
-second_dimension = n-m+3
-
-third_dimension=[i for i in range(n+1)]
-
-numberOfCouriers=[i for i in range(m)]
-
-numberOfPosition=[i for i in range(second_dimension)]
-
-distances = makeDict([third_dimension , third_dimension], D, 0)
-
-prob = LpProblem("Problema", LpMinimize)
-
-
-
-
-# Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
-# tours = [[[LpVariable(f"tours_{i}_{j}_{k}",lowBound=0.0, upBound=1.0, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
-
-
-tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
-
-
-#vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
-#saltiamo il primo piano perchè è starting point (=0)
-for z in range(1,n+1):
-    #vado a sommare tutto il piano
-    prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1.0
-    #prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) <= 1
-
-#stesso vincolo ma sulla profondità
-for i in range(m):
-    for j in range(second_dimension):
-        prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1.0
-        #prob += lpSum([tours[i][j][z] for z in range(n+1)]) <= 1
-
-#ulteriore vincolo: prima colonna solo origin point
-for i in range(m):
-    prob+=tours[i][0][0] == 1.0
-    #prob+=tours[i][0][0] <= 1
-
-#ulteriore vincolo: seconda colonna almeno un pacco
-for i in range(m):
-    prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) == 1.0
-    #prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) <= 1
-
-
-#check su ordine assegnamenti - no buchi
-# for i in range(m): #per ogni corriere
-#     for j in range(2,second_dimension): #mi muovo orizzontalmente sul cubo
-#         #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
-#         prob+=(lpSum([tours[i][jj][k] for jj in range(j,second_dimension)]for k in range(1,n+1))>= \
-#             (lpSum([tours[i][jjj][k] for jjj in range(second_dimension)]for k in range(1,n+1))-j+1))
-
-# for each courier, keep two consecutive columns and sum all the elements on each column
-# then check that the first is >= the second, if it is not the case then there is a 0 and then a 1
-# so the courier returns to the home and then deliver another item, it is not possible
-for i in range(m): #per ogni corriere
-    for j in range(2,second_dimension-1): #mi muovo orizzontalmente sul cubo
-        #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
-        prob+=lpSum([tours[i][j][k] for k in range(1,n+1)])>= lpSum([tours[i][j+1][k] for k in range(1,n+1)])
-
-
-
-#checking weights, sum of the sum of the depth of our matrix (first dimension excluded), multiplied by the weight of each package, 
-# trivially if the sum is 1 then we'll get the weight as result and we have to check that the sum of all of this packages is <= capacity of the courier
-for i in range(m):
-    prob+=lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])<=l[i]
+def main(filename):
     
+    m, n, l, s, D = parseInstance(filename)
 
-# a=LpVariable("a",cat=LpBinary)
-# b=LpVariable("b",lowBound=0,upBound=1,cat=LpInteger)
 
-# prob+=b==(lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])+1-lpSum([lpSum([tours[1][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)]))
+    #--SUPER IMPORTANTE!!!!--------
+    #preprocessing of D, we need to have the origin as first row/column for our algorithm to work correctly
+    #--SUPER IMPORTANTE!!!!--------
 
-#sommatoria
-# i_00 * i_10 * d_00 +
-# i_00 * i_11 * d_01 +
-# i_00 * i_12 * d_02 +
-# i_00 * i_13 * d_03 +
+    D.insert(0,D[-1])
+    D.pop()
+    D=np.array(D)
+    D=np.insert(D,0,D[:,-1],axis=1)
+    D=D[:,:-1]
 
-#distance_of_tours=LpVariable.dicts("distance_of_tours",(numberOfCouriers),lowBound=0,upBound=upper_bound_distances,cat=LpInteger)    #TO DO: CHANGE UPPER BOUND !!!!!
+    #calcolo valore di upper-bound per la funzione di max
+    upper_bound_distances = sum(D[0,:]) + sum(D[:,0]) 
+    #print(upper_bound_distances)
+
+    D=D.tolist()
+    #print(D)
+
+    #start of the problem
+
+    second_dimension = n-m+3
+
+    third_dimension=[i for i in range(n+1)]
+
+    numberOfCouriers=[i for i in range(m)]
+
+    numberOfPosition=[i for i in range(second_dimension)]
+
+    distances = makeDict([third_dimension , third_dimension], D, 0)
+
+    prob = LpProblem("Problema", LpMinimize)
+
+
+
+
+    # Crea le variabili del problema -> parallelepipedo 3 dimensioni (n+1 per via di starting point)
+    # tours = [[[LpVariable(f"tours_{i}_{j}_{k}",lowBound=0.0, upBound=1.0, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
+
+
+    tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
+
+
+    #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
+    #saltiamo il primo piano perchè è starting point (=0)
+    for z in range(1,n+1):
+        #vado a sommare tutto il piano
+        prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1.0
+        #prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) <= 1
+
+    #stesso vincolo ma sulla profondità
+    for i in range(m):
+        for j in range(second_dimension):
+            prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1.0
+            #prob += lpSum([tours[i][j][z] for z in range(n+1)]) <= 1
+
+    #ulteriore vincolo: prima colonna solo origin point
+    for i in range(m):
+        prob+=tours[i][0][0] == 1.0
+        #prob+=tours[i][0][0] <= 1
+
+    #ulteriore vincolo: seconda colonna almeno un pacco
+    for i in range(m):
+        prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) == 1.0
+        #prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) <= 1
+
+
+    #check su ordine assegnamenti - no buchi
+    # for i in range(m): #per ogni corriere
+    #     for j in range(2,second_dimension): #mi muovo orizzontalmente sul cubo
+    #         #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
+    #         prob+=(lpSum([tours[i][jj][k] for jj in range(j,second_dimension)]for k in range(1,n+1))>= \
+    #             (lpSum([tours[i][jjj][k] for jjj in range(second_dimension)]for k in range(1,n+1))-j+1))
+
+    # for each courier, keep two consecutive columns and sum all the elements on each column
+    # then check that the first is >= the second, if it is not the case then there is a 0 and then a 1
+    # so the courier returns to the home and then deliver another item, it is not possible
+    for i in range(m): #per ogni corriere
+        for j in range(2,second_dimension-1): #mi muovo orizzontalmente sul cubo
+            #salto la prima e la seconda (che è sempre un pacco) --- vedi foto su discord del 26/06/23 ore 12:11
+            prob+=lpSum([tours[i][j][k] for k in range(1,n+1)])>= lpSum([tours[i][j+1][k] for k in range(1,n+1)])
+
+
+
+    #checking weights, sum of the sum of the depth of our matrix (first dimension excluded), multiplied by the weight of each package, 
+    # trivially if the sum is 1 then we'll get the weight as result and we have to check that the sum of all of this packages is <= capacity of the courier
+    for i in range(m):
+        prob+=lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])<=l[i]
+        
+
     
-distance_of_tours = [LpVariable(f"distance_of_tours_{i}",lowBound=0,upBound=upper_bound_distances,cat=LpInteger) for i in range(m)]
+    distance_of_tours = [LpVariable(f"distance_of_tours_{i}",lowBound=0,upBound=upper_bound_distances,cat=LpInteger) for i in range(m)]
 
 
-# for i in range(m):
-#     prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
+    # for i in range(m):
+    #     prob+=distance_of_tours[i]==lpSum([tours[i][j][k]*tours[i][j+1][kk]*D[k][kk] for kk in third_dimension for k in third_dimension for j in range(second_dimension-1)])
 
-#this is the proof that addition can be done
-#prob+=(tours[0][1][0] + tours[0][0][1]) >=2
+    #this is the proof that addition can be done
+    #prob+=(tours[0][1][0] + tours[0][0][1]) >=2
 
 
-#itero per ogni corriere
-for c in range(m): 
-     acc_distances = [] #accumula per ogni corriere la distanza
-     #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
-     for i in range(second_dimension-1): #seconda dimensione, x
-         for j in range(n+1): #3a dimensione -> z
-             #recupero il valore della Lp variable corrispondente a i,j
-             current_i = tours[c][i][j] #recupero flag 0-1 assegnato
-             #now itero sulla colonna successiva
-             for jj in range(n+1): #iteriamo di nuovo su terza dimensione
-                 #next_c.append
+    #itero per ogni corriere
+    for c in range(m): 
+        acc_distances = [] #accumula per ogni corriere la distanza
+        #itero per tutte le variabili i,j -> vista dall'alto del 3D, scorro prima la colonna e poi la riga
+        for i in range(second_dimension-1): #seconda dimensione, x
+            for j in range(n+1): #3a dimensione -> z
+                #recupero il valore della Lp variable corrispondente a i,j
+                current_i = tours[c][i][j] #recupero flag 0-1 assegnato
+                #now itero sulla colonna successiva
+                for jj in range(n+1): #iteriamo di nuovo su terza dimensione
+                    #next_c.append
 
-                acc_distances.append(forceAnd(prob,f"{c}_{i}_{j}_{i+1}_{jj}",current_i,tours[c][i+1][jj])* D[j][jj])
+                    acc_distances.append(forceAnd(prob,f"{c}_{i}_{j}_{i+1}_{jj}",current_i,tours[c][i+1][jj])* D[j][jj])
+                
+        prob+= distance_of_tours[c] == lpSum(acc_distances) 
+
+    prob.setObjective(getMax(prob,"dd",0,upper_bound_distances,distance_of_tours))
+
+    print("-----------------")
+    print(prob.objective)
+    print("-----------------")
+
+    # Risolvi il problema
+    
+    solver=getSolver('PULP_CBC_CMD', timeLimit=300)
+    
+    
+    prob.solve(solver=solver)
+    #0 no solution found, 1 optimal, 2 sub-optimal
+    print("PROB:",prob.sol_status)
+    sol_time=prob.solutionTime
+    sol_status=prob.sol_status
+        
+    print("Status:", LpStatus[prob.status])
+    # prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
+
+    print("-----------------")
+    for row in D:
+        print(row)
+    print("-----------------")
+
+    if ('Infeasible' in str(LpStatus[prob.status])):
+        pass
+    else:
+
+        #Stampa i valori delle variabili
+        for var in prob.variables():
+            if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
+                print(f"{var.name} = {var.varValue}",type(var.varValue))
+
+            #if "distance_of_tours" in var.name:
+            #    print(f"{var.name} = {var.varValue}")
             
-     prob+= distance_of_tours[c] == lpSum(acc_distances) 
-
-"""
-uno = LpVariable("distance_1",0,upper_bound_distances,LpInteger) 
-due = LpVariable("distance_2",0,upper_bound_distances,LpInteger) 
-tre = LpVariable("distance_3",0,upper_bound_distances,LpInteger) 
-
-prob += uno == distance_of_tours[0]
-prob += due == distance_of_tours[1]
-prob += tre == distance_of_tours[2]
-"""
 
 
-#variabile per objective function (minimizziamo la riga più grande)
-#maxTravel = LpVariable("maxTravel",lowBound=0,upBound=None,cat=LpInteger)
+        depthSearch=np.zeros((m,second_dimension))
 
-#maxTravel = getMax(prob,"max_d",0,upper_bound_distances,distance_of_tours)
+        for row in range(m): #0:3
+            for column in range(second_dimension): #0:7
+                temp=0
+                for var in prob.variables():
+                    if f"tours_{row}_{column}" in var.name:
+                        if var.varValue==1.0:
+                            temp=int(var.name.split("_")[-1])                
+                depthSearch[row][column]=temp
+            
+        print(depthSearch)
 
-"""
-probe = LpVariable("probe",lowBound=0,upBound=100,cat=LpInteger) # risultato
-prob += probe >= 50
-"""
+        obj=[]
+        #stampo controcalcolo delle distanze
+        for c in range(m): #per ogni corriere
+            obj.append(sum([D[int(depthSearch[c,i])][int(depthSearch[c,i+1])] for i in range(second_dimension-1)]))
+            #print(sum([D[int(depthSearch[c,i])][int(depthSearch[c,i+1])] for i in range(second_dimension-1)]))
+            
+        return sol_time,sol_status,max(obj),depthSearch
 
-#getMax(prob,"dd",0,upper_bound_distances,distance_of_tours)
 
-#aggiungo il vincolo per la maxTravel
-#prob += lpSum(#sommatoria) == maxTravel
+if __name__ == "__main__":
+    
+    try:
+        fileName = sys.argv[1]
+    except:
+        print("Give me the name of the file like first parameter")
+        exit(0)
 
-#prob.setObjective(getMax(prob,"max_d",0,upper_bound_distances,distance_of_tours))
-prob.setObjective(getMax(prob,"dd",0,upper_bound_distances,distance_of_tours))
-
-print("-----------------")
-print(prob.objective)
-print("-----------------")
-
-# Risolvi il problema
-prob.solve()
-print("Status:", LpStatus[prob.status])
-# prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
-
-print("-----------------")
-for row in D:
-    print(row)
-print("-----------------")
-
-if ('Infeasible' in str(LpStatus[prob.status])):
-    pass
-else:
-
-    #Stampa i valori delle variabili
-    for var in prob.variables():
-        if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
-            print(f"{var.name} = {var.varValue}",type(var.varValue))
-
-        #if "distance_of_tours" in var.name:
-        #    print(f"{var.name} = {var.varValue}")
+    sol_time,sol_status,objective,tours=main(filename=fileName)
+    
+    bool_status= False
+    
+    if sol_status==1:
+        bool_status=True
+    
+    if not bool_status:
+        sol_time=300
         
-
-
-    depthSearch=np.zeros((m,second_dimension))
-
-    for row in range(m): #0:3
-        for column in range(second_dimension): #0:7
-            temp=0
-            for var in prob.variables():
-                if f"tours_{row}_{column}" in var.name:
-                    if var.varValue==1.0:
-                        temp=int(var.name.split("_")[-1])                
-            depthSearch[row][column]=temp
-        
-    print(depthSearch)
-
-    #stampo controcalcolo delle distanze
-    for c in range(m): #per ogni corriere
-        
-        print(sum([D[int(depthSearch[c,i])][int(depthSearch[c,i+1])] for i in range(second_dimension-1)]))
-
-
-
+    jsonData = {"MIP":{
+            "time": str(int(sol_time)),
+            "optimal": bool_status,
+            "obj": str(objective),
+            "sol": tours.tolist()
+        }}
+    jsonString = json.dumps(jsonData)
+    print(jsonString)
