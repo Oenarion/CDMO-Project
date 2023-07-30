@@ -209,7 +209,8 @@ def main(filename):
 
     numberOfPosition=[i for i in range(second_dimension)]
 
-    distances = makeDict([third_dimension , third_dimension], D, 0)
+    #commentata perchè non veniva usata
+    #distances = makeDict([third_dimension , third_dimension], D, 0)
 
     prob = LpProblem("Problema", LpMinimize)
 
