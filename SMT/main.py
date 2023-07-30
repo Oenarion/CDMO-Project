@@ -46,8 +46,8 @@ solver = Solver()
 #tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
 #tours = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
 #since we have number, la terza dimensione non ci serve --> tours = 2D matrix
-tours = [[Int(f"tours{i}_{j}")for j in range(second_dimension)]for i in range(m)] #- questo funzionava
-#tours = [IntVector(f"tours_{i}", second_dimension) for i in range(m) ]
+#tours = [[Int(f"tours{i}_{j}")for j in range(second_dimension)]for i in range(m)] #- questo funzionava
+tours = [IntVector(f"tours_{i}", second_dimension) for i in range(m) ]
 
 """
 la tours sarà costruita così
@@ -92,18 +92,28 @@ for i in range(m):
     for j in range(2, second_dimension-1):
         solver.add(Implies(tours[i][j]==0, tours[i][j+1]==0))
 
+
 #---gestione pesi
 capacities = [Int(f"capacities{i}")for i in range(m)] #conversione capacità in array Z3
-weights = [Int(f"capacities{i}")for i in range(n+1)] #accumulatore pesi Z3
+#weights = [Int(f"capacities{i}")for i in range(n+1)] #accumulatore pesi Z3
+weights = IntVector(f"weights", n+1)
 
 for i in range(n+1):
     solver.add(weights[i]==s[i]) #assegno i pesi all'array z3
 
-
+#######_____________________________________________________________________
+"""
+PROSSIMA VOLTA RIPRENDERE DA QUI!!! C'è DA FARE LA SOMMA DEI PESI CARICATI
+E VEDERE CHE RISPETTINO I VINCOLI DI CAPACITA'
+"""
+#######_____________________________________________________________________
 
 for i in range(m):
-    solver.add(capacities[i]==l[i])#imposto l'uguaglianza forzata con il valore dato
-
+    #solver.add(capacities[i]==l[i])#imposto l'uguaglianza forzata con il valore dato
+    print(type(tours[i]))
+    print(type(tours[i][0]))
+    solver.add(Sum([weights[tours[i][j]]for j in range(second_dimension)]) <= l[i])
+    """
     inter_weight = 0
     for j in range(second_dimension):
         #inter_weight += weights[]
@@ -114,11 +124,9 @@ for i in range(m):
 
    #solver.add(Sum() <= capacities[i])
     #solver.add(capacities[i]==s[i])) #imposto l'uguaglianza forzata con il valore dato
+    """
 
 
-
-
-#solver.add(capacities == K(IntSort(), s))
 
 """
 def countOccurrencies(elem,matrix,i_size,j_size):
