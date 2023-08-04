@@ -6,6 +6,7 @@ m = 3 #couriers
 n = 7 #items
 l = [15, 10, 7] #max load per courier
 s = [3,2, 6, 8, 5, 4, 4] #weight of each itemreversed_enc
+# s = [15,1,1,1,1,1,1] #weight of each itemreversed_enc
 D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
     [3, 0, 4, 3, 4, 7, 7, 3],
     [3, 4, 0, 7, 6, 3, 5, 3],
@@ -30,6 +31,7 @@ D=D[:,:-1]
 
 #calcolo valore di upper-bound per la funzione di max
 upper_bound_distances = sum(D[0,:]) + sum(D[:,0]) 
+lastDistanceFound = int(upper_bound_distances)
 #print(upper_bound_distances)
 
 D=D.tolist()
@@ -94,12 +96,12 @@ for i in range(m):
 
 
 #---gestione pesi
-capacities = [Int(f"capacities{i}")for i in range(m)] #conversione capacità in array Z3
-#weights = [Int(f"capacities{i}")for i in range(n+1)] #accumulatore pesi Z3
-weights = IntVector(f"weights", n+1)
+# capacities = [Int(f"capacities{i}")for i in range(m)] #conversione capacità in array Z3
+# #weights = [Int(f"capacities{i}")for i in range(n+1)] #accumulatore pesi Z3
+# weights = IntVector(f"weights", n+1)
 
-for i in range(n+1):
-    solver.add(weights[i]==s[i]) #assegno i pesi all'array z3
+# for i in range(n+1):
+#     solver.add(weights[i]==s[i]) #assegno i pesi all'array z3
 
 #######_____________________________________________________________________
 """
@@ -109,10 +111,32 @@ E VEDERE CHE RISPETTINO I VINCOLI DI CAPACITA'
 #######_____________________________________________________________________
 
 for i in range(m):
-    #solver.add(capacities[i]==l[i])#imposto l'uguaglianza forzata con il valore dato
-    print(type(tours[i]))
-    print(type(tours[i][0]))
-    solver.add(Sum([weights[tours[i][j]]for j in range(second_dimension)]) <= l[i])
+    # int vector containing in each index the weight of the item that the courier is carrying
+    # the item zero has size zero
+    effectiveWeight = IntVector(f"effectiveWeight_{i}", second_dimension)
+    for j in range(second_dimension):
+        for k in range(n+1):
+            # if the courier is carrying the item i-th then the effective weight is equal to the size of this item
+            solver.add(Implies(tours[i][j]==k, effectiveWeight[j]==s[k]))
+    # summing the effective weights and imposing that it must be less or equal than the size of the truck
+    solver.add(Sum(effectiveWeight)<=l[i])
+
+
+effectiveDistances = [IntVector(f"effectiveDistance{i}", second_dimension-1) for i in range(m)]
+# imposing that the distances travelled by the courier is smaller than the previous max distance
+for i in range(m):
+    # int vector containing in each index the weight of the item that the courier is carrying
+    # the item zero has size zero
+    #effectiveDistance = IntVector(f"effectiveDistance{i}", second_dimension-1)
+    for j in range(second_dimension-1):
+        for k1 in range(n+1):
+            for k2 in range(n+1):
+                # if the courier is carrying the item i-th then the effective weight is equal to the size of this item
+                solver.add(Implies(And(tours[i][j]==k1, tours[i][j+1]==k2), effectiveDistances[i][j]==D[k1][k2]))
+    # summing the effective weights and imposing that it must be less or equal than the size of the truck
+    solver.add(Sum(effectiveDistances[i])<lastDistanceFound)
+
+
     """
     inter_weight = 0
     for j in range(second_dimension):
@@ -175,20 +199,81 @@ print(z.value())
 """
 
 print(solver.check())
+
 #print(s.model())
-mod = solver.model()
-print(mod)
+if str(solver.check()) != 'unsat':
+    mod = solver.model()
+    # print(mod)
+
+    #per il printer: ricostruire matrice
+    matrix_of_tours = printer(mod,"tours",m,second_dimension)
+    print(matrix_of_tours)
+
+    couriers_distances = np.zeros(m)
+    for i in range(m):
+        couriers_distances[i] = sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)])
+
+    #lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
+    
+    lastDistanceFailed = 0
+    lastDistanceTrial = lastDistanceFound // 2
+    solutionFound = True
+    
+    obj = lastDistanceFound
+    #sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
+    print("lastDistanceFound: ", lastDistanceFound)
+
+    first_iteration = True
+
+    while(lastDistanceFound - lastDistanceFailed > 1):
+        lastDistanceTrial = (lastDistanceFailed + lastDistanceFound) // 2
+                
+        print("last_distance_failed",lastDistanceFailed)
+        print("last_distance_found",lastDistanceFound)
+        print("last_distance_trial", lastDistanceTrial)
+
+        #if not first_iteration:
+        #    solver.pop()
+        #print('-'*10)
+
+        # creating a new level
+        solver.push()
+        print("Try for: ", lastDistanceTrial)
+
+        for i in range(m):
+            solver.add(Sum(effectiveDistances[i])<lastDistanceTrial)
+    
+        checkModel = solver.check()
+        print("checkModel = ", checkModel)
+
+        if str(checkModel) == 'sat':
+            # solutionFound = True
+            mod = solver.model()
+           
+            matrix_of_tours = printer(mod,"tours",m,second_dimension)
+            print(matrix_of_tours)
+            
+            for i in range(m):
+                couriers_distances[i] = sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)])
+
+            lastDistanceFound = max(couriers_distances)   #we want to check only distances < of the current max (see check_distances)
+            obj = lastDistanceFound
+            
+            print("lastDistanceFound: ", lastDistanceFound)
+        else:
+            # solutionFound = False
+            lastDistanceFailed = lastDistanceTrial
+
+        #first_iteration = False
+        solver.pop()
+        print('-'*10)
+
+print("Last solution found: ", obj)
+matrix_of_tours = printer(mod,"tours",m,second_dimension)
+print(matrix_of_tours)
 
 
-#per il printer: ricostruire matrice
-matrix = printer(mod,"tours",m,second_dimension)
-print(matrix)
+for i in range(m):
+    print(sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)]))
 
 
-
-
-
-
-
-#s = Solver
-#s.to_smt2()
