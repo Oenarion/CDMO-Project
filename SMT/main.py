@@ -2,7 +2,7 @@ import numpy as np
 from z3 import *
 from printer import printer
 from multiprocessing import Process
-from threading import Thread,Lock,Event
+from threading import Thread,Lock,Event,get_native_id
 from time import perf_counter,sleep
 import sys
 import json
@@ -27,6 +27,9 @@ class myThread(Thread):
         self.lock=Lock()
         self.data=None
         self._stop_event = Event()
+        self.threadPID=os.getpid()
+
+        print('hey sonon il thread.. pid: ',self.threadPID)
         
     def run(self):
         #running main
@@ -34,7 +37,12 @@ class myThread(Thread):
             
     def getValue(self):
         with self.lock:
-            return self.data.copy()
+            if type(self.data) is list:
+                return self.data.copy()
+            return None
+                
+            return None
+            
         
     def stop(self):
         self._stop_event.set()
@@ -302,6 +310,9 @@ class myThread(Thread):
                 
                     matrix_of_tours = printer(mod,"tours",m,second_dimension)
                     print(matrix_of_tours)
+
+                    with self.lock:
+                        self.data=matrix_of_tours
                     
                     for i in range(m):
                         couriers_distances[i] = sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)])
@@ -323,6 +334,8 @@ class myThread(Thread):
 
         print("Last solution found: ", obj)
         matrix_of_tours = printer(mod,"tours",m,second_dimension)
+        with self.lock:
+            self.data = matrix_of_tours
         print(matrix_of_tours)
 
 
@@ -333,27 +346,31 @@ class myThread(Thread):
 
 
 if __name__ == "__main__":
+
     # thread = Process(target=main, args=(id(counter),))
     mainThread=myThread()
     mainThread.start()
-    threadPID=mainThread.native_id
+    #threadPID=mainThread.native_id
+    threadPID=os.getpid()
+    #threadPID = mainThread.get_native_id()
     print(threadPID)
     
     startingTime = perf_counter()
     # thread.start()
 
     
-    while(mainThread.is_alive() and perf_counter()-startingTime <= 10):
+    while(mainThread.is_alive() and perf_counter()-startingTime <= 30):
         print(perf_counter()-startingTime)
         sleep(0.5)
     
 
     matrix_of_tours=mainThread.getValue()
+    print(type(matrix_of_tours))
     mainThread.stop()
     if mainThread.is_alive():
         
         #mainThread.stop()
-        os.kill(threadPID,signal.SIGBREAK)
+        
         terminationTime = 300
         optimal = "false"
         print("thread killed")
@@ -372,5 +389,7 @@ if __name__ == "__main__":
         }}
     
     jsonString = json.dumps(jsonData)
+
+    os.kill(threadPID,signal.SIGKILL)
     
     
