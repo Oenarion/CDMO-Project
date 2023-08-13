@@ -248,7 +248,6 @@ if __name__ == "__main__":
     thread = Process(target=main, args=())
     startingTime = time.time()
     thread.start()
-    main()
 
     while(thread.is_alive() and time.time()-startingTime <= 300):
         continue
@@ -259,7 +258,7 @@ if __name__ == "__main__":
         optimal = "false"
         print("thread killed")
     else:
-        terminationTime = math.trunc((time.time() - startingTime))
+        terminationTime = round(time.time() - startingTime)
         optimal = "true"
 
     print("execution time: ", terminationTime)
