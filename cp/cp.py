@@ -34,7 +34,7 @@ def createJson(result):
         optimal = "true"
         terminationTime = str(terminationTime) 
 
-    jsonData = {"sat":{
+    jsonData = {"cp":{
                 "time": str(terminationTime),
                 "optimal": optimal,
                 "obj": str(obj),

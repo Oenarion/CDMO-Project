@@ -8,6 +8,7 @@ import sys
 import json
 import os
 import signal
+from jsonToFile import saveJson
 
 try:
     sys.path.insert(0, 'instances')
@@ -18,7 +19,7 @@ except:
 
 obj=-1
 matrix_of_tours=[]
-counter=0
+
 
 class myThread(Thread):
     
@@ -28,6 +29,7 @@ class myThread(Thread):
         self.data=None
         self._stop_event = Event()
         self.threadPID=os.getpid()
+        self.obj = None
 
         print('hey sonon il thread.. pid: ',self.threadPID)
         
@@ -37,11 +39,12 @@ class myThread(Thread):
             
     def getValue(self):
         with self.lock:
-            if type(self.data) is list:
-                return self.data.copy()
-            return None
+            print("richiesta di accesso a tipo:",type(self.data))
+
+            if self.data is not None:
+                return self.data.copy(),self.obj
+            return None,None
                 
-            return None
             
         
     def stop(self):
@@ -50,21 +53,6 @@ class myThread(Thread):
         
     
     def main(self):
-        
-        
-        # m = 3 #couriers
-        # n = 7 #items
-        # l = [15, 10, 7] #max load per courier
-        # s = [3,2, 6, 8, 5, 4, 4] #weight of each itemreversed_enc
-        # # s = [15,1,1,1,1,1,1] #weight of each itemreversed_enc
-        # D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
-        #     [3, 0, 4, 3, 4, 7, 7, 3],
-        #     [3, 4, 0, 7, 6, 3, 5, 3],
-        #     [6, 3, 7, 0, 3, 6, 6, 4],
-        #     [5, 4, 6, 3, 0, 3, 3, 3],
-        #     [6, 7, 3, 6, 3, 0, 2, 4],
-        #     [6, 7, 5, 6, 3, 2, 0, 4],
-        #     [2, 3, 3, 4, 3, 4, 4, 0]]
         
         try:
             fileName = sys.argv[1]
@@ -96,17 +84,10 @@ class myThread(Thread):
         #print(D)
 
         second_dimension = n-m+3
-        third_dimension=[i for i in range(n+1)]
-        numberOfCouriers=[i for i in range(m)]
-        numberOfPosition=[i for i in range(second_dimension)]
 
         #solver di SMT
         solver = Solver()
 
-        #tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
-        #tours = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
-        #since we have number, la terza dimensione non ci serve --> tours = 2D matrix
-        #tours = [[Int(f"tours{i}_{j}")for j in range(second_dimension)]for i in range(m)] #- questo funzionava
         tours = [IntVector(f"tours_{i}", second_dimension) for i in range(m) ]
 
         """
@@ -115,9 +96,6 @@ class myThread(Thread):
         c1 = [0,3,0,0]
         c2 = [0,4,0,0]
         """
-
-
-
         print(type(tours[0][0]))
 
         #tutti i valori assegnati devono essere nel range 0-n
@@ -153,20 +131,7 @@ class myThread(Thread):
                 solver.add(Implies(tours[i][j]==0, tours[i][j+1]==0))
 
 
-        #---gestione pesi
-        # capacities = [Int(f"capacities{i}")for i in range(m)] #conversione capacità in array Z3
-        # #weights = [Int(f"capacities{i}")for i in range(n+1)] #accumulatore pesi Z3
-        # weights = IntVector(f"weights", n+1)
-
-        # for i in range(n+1):
-        #     solver.add(weights[i]==s[i]) #assegno i pesi all'array z3
-
-        #######_____________________________________________________________________
-        """
-        PROSSIMA VOLTA RIPRENDERE DA QUI!!! C'è DA FARE LA SOMMA DEI PESI CARICATI
-        E VEDERE CHE RISPETTINO I VINCOLI DI CAPACITA'
-        """
-        #######_____________________________________________________________________
+        #---handling weights
 
         for i in range(m):
             # int vector containing in each index the weight of the item that the courier is carrying
@@ -179,6 +144,7 @@ class myThread(Thread):
             # summing the effective weights and imposing that it must be less or equal than the size of the truck
             solver.add(Sum(effectiveWeight)<=l[i])
 
+        #--- handling distances
 
         effectiveDistances = [IntVector(f"effectiveDistance{i}", second_dimension-1) for i in range(m)]
         # imposing that the distances travelled by the courier is smaller than the previous max distance
@@ -195,73 +161,10 @@ class myThread(Thread):
             solver.add(Sum(effectiveDistances[i])<lastDistanceFound)
 
 
-            """
-            inter_weight = 0
-            for j in range(second_dimension):
-                #inter_weight += weights[]
-                continue
-
-            #definiamo qui lista z3 in cui imponiamo assegnamenti
-            w_sum = [Int(f"w_sum{i}_{j}")for j in range(n+1)] #accumulatore pesi Z3
-
-        #solver.add(Sum() <= capacities[i])
-            #solver.add(capacities[i]==s[i])) #imposto l'uguaglianza forzata con il valore dato
-            """
-
-
-
-        """
-        def countOccurrencies(elem,matrix,i_size,j_size):
-            counter = 0
-            for i in range(i_size):
-                for j in range(j_size):
-                    m = matrix[i][j]
-                    if m == elem:
-                        counter += 1
-            return counter
-            
-
-        counter = [Int(f"counter{i}")for i in range(second_dimension)] #serve come contatore per il numero di occorrenze dei delvery points
-        print(len(counter))
-        #l'array lo faccio che conta anche lo zero (0) e arriva a (second_dimension+1)
-        for i in range(second_dimension):
-            solver.add(counter[i] == countOccurrencies(i,tours,m,second_dimension))
-            
-            if(i != 0 or i!=second_dimension-1):
-                solver.add(counter[i] == 1)
-
-        """
-
-
-
-
-        """
-        print('ciaoooo')
-
-        from z3 import *
-        x, y = Reals('x y')
-        z = Int('z')
-
-        A1, A2 = Bools('A1 A2')
-
-        solver.add
-        solver.add(z>5)
-        solver.add(Or(Not(A1), 2*x + y >= -2))
-        solver.add(Or(A1, x + y >= 3))
-        solver.add(Or(Not(A2), 4*x - y >= -4))
-        solver.add(Or(A2, 2*x - y >= -6))
-        z = s.minimize(x)
-        print(s.check())
-        print(s.model())
-        print(z.value())
-        """
-
         print(solver.check())
 
-        #print(s.model())
         if str(solver.check()) != 'unsat':
             mod = solver.model()
-            # print(mod)
 
             #per il printer: ricostruire matrice
             matrix_of_tours = printer(mod,"tours",m,second_dimension)
@@ -271,17 +174,11 @@ class myThread(Thread):
             for i in range(m):
                 couriers_distances[i] = sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)])
 
-            #lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
-            
             lastDistanceFailed = 0
             lastDistanceTrial = lastDistanceFound // 2
-            solutionFound = True
             
             obj = lastDistanceFound
-            #sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
             print("lastDistanceFound: ", lastDistanceFound)
-
-            first_iteration = True
 
             while(lastDistanceFound - lastDistanceFailed > 1 and self._stop_event.is_set()==False):
                 lastDistanceTrial = (lastDistanceFailed + lastDistanceFound) // 2
@@ -289,10 +186,6 @@ class myThread(Thread):
                 print("last_distance_failed",lastDistanceFailed)
                 print("last_distance_found",lastDistanceFound)
                 print("last_distance_trial", lastDistanceTrial)
-
-                #if not first_iteration:
-                #    solver.pop()
-                #print('-'*10)
 
                 # creating a new level
                 solver.push()
@@ -305,37 +198,31 @@ class myThread(Thread):
                 print("checkModel = ", checkModel)
 
                 if str(checkModel) == 'sat':
-                    # solutionFound = True
                     mod = solver.model()
                 
                     matrix_of_tours = printer(mod,"tours",m,second_dimension)
                     print(matrix_of_tours)
 
-                    with self.lock:
-                        self.data=matrix_of_tours
-                    
                     for i in range(m):
                         couriers_distances[i] = sum([D[int(matrix_of_tours[i][j])][int(matrix_of_tours[i][j+1])] for j in range(second_dimension-1)])
 
                     lastDistanceFound = max(couriers_distances)   #we want to check only distances < of the current max (see check_distances)
                     obj = lastDistanceFound
+
+                    with self.lock:
+                        self.data=matrix_of_tours
+                        self.obj=obj
                     
                     print("lastDistanceFound: ", lastDistanceFound)
                 else:
-                    # solutionFound = False
                     lastDistanceFailed = lastDistanceTrial
 
-                #first_iteration = False
                 solver.pop()
                 print('-'*10)
-                
-                with self.lock:
-                    self.data=matrix_of_tours
 
         print("Last solution found: ", obj)
         matrix_of_tours = printer(mod,"tours",m,second_dimension)
-        with self.lock:
-            self.data = matrix_of_tours
+
         print(matrix_of_tours)
 
 
@@ -350,28 +237,24 @@ if __name__ == "__main__":
     # thread = Process(target=main, args=(id(counter),))
     mainThread=myThread()
     mainThread.start()
-    #threadPID=mainThread.native_id
+
     threadPID=os.getpid()
-    #threadPID = mainThread.get_native_id()
     print(threadPID)
     
     startingTime = perf_counter()
-    # thread.start()
 
+    terminationTime = 30
     
-    while(mainThread.is_alive() and perf_counter()-startingTime <= 30):
+    while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
     
 
-    matrix_of_tours=mainThread.getValue()
+    matrix_of_tours,obj=mainThread.getValue()
     print(type(matrix_of_tours))
     mainThread.stop()
+
     if mainThread.is_alive():
-        
-        #mainThread.stop()
-        
-        terminationTime = 300
         optimal = "false"
         print("thread killed")
     else:
@@ -381,15 +264,27 @@ if __name__ == "__main__":
     
     print(f"execution time: {terminationTime}s", )
 
-    jsonData = {"smt":{
-            "time": str(terminationTime),
-            "optimal": optimal,
-            "obj": str(int(obj)),
-            "sol": matrix_of_tours.astype(int).tolist()
-        }}
-    
-    jsonString = json.dumps(jsonData)
+    if matrix_of_tours is not None:
+        jsonData = {"smt":{ 
+                "time": str(terminationTime),
+                "optimal": optimal,
+                "obj": str(int(obj)),
+                "sol": matrix_of_tours.astype(int).tolist()
+            }}
+    else:
+        jsonData = {"smt":{
+                "time": str(terminationTime),
+                "optimal": optimal,
+                "obj": "-1",
+                "sol" : "None"
+            }}
 
-    os.kill(threadPID,signal.SIGKILL)
+    
+    #jsonString = json.dumps(jsonData)
+    #print(jsonString)
+
+    saveJson(sys.argv[1],jsonData)
+
+    os.kill(threadPID,signal.SIGKILL) #killo tutto
     
     
