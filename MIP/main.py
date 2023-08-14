@@ -295,7 +295,7 @@ def main(filename):
                 for jj in range(n+1): #iteriamo di nuovo su terza dimensione
                     #next_c.append
 
-                    acc_distances.append(forceAnd(prob,f"{c}_{i}_{j}_{i+1}_{jj}",current_i,tours[c][i+1][jj])* D[j][jj])
+                    acc_distances.append(forceAnd(prob,f"and_{c}_{i}_{j}_{i+1}_{jj}",current_i,tours[c][i+1][jj])* D[j][jj])
                 
         prob+= distance_of_tours[c] == lpSum(acc_distances) 
 
@@ -306,8 +306,8 @@ def main(filename):
     print("-----------------")
 
     # Risolvi il problema
-    solver=getSolver('PULP_CBC_CMD', timeLimit=300)
-    # solver=getSolver('GLPK_CMD', timeLimit=300)
+    #solver=getSolver('PULP_CBC_CMD', timeLimit=300)
+    solver=getSolver('GLPK_CMD', timeLimit=300)
     prob.solve(solver=solver)
     
     #prob.solve()
