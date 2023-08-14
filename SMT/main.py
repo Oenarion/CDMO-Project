@@ -1,11 +1,9 @@
 import numpy as np
 from z3 import *
 from printer import printer
-from multiprocessing import Process
-from threading import Thread,Lock,Event,get_native_id
+from threading import Thread,Lock,Event
 from time import perf_counter,sleep
 import sys
-import json
 import os
 import signal
 from jsonToFile import saveJson
