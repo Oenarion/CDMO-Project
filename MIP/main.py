@@ -2,6 +2,7 @@ import numpy as np
 from pulp import *
 import re #string mather
 import sys
+from jsonToFile import saveJson
 
 
 
@@ -305,11 +306,12 @@ def main(filename):
     print("-----------------")
 
     # Risolvi il problema
-    
     solver=getSolver('PULP_CBC_CMD', timeLimit=300)
-    
-    
+    # solver=getSolver('GLPK_CMD', timeLimit=300)
     prob.solve(solver=solver)
+    
+    #prob.solve()
+
     #0 no solution found, 1 optimal, 2 sub-optimal
     print("PROB:",prob.sol_status)
     sol_time=prob.solutionTime
@@ -385,3 +387,5 @@ if __name__ == "__main__":
         }}
     jsonString = json.dumps(jsonData)
     print(jsonString)
+
+    saveJson(sys.argv[1],jsonData)
