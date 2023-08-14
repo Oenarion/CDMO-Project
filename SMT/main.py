@@ -243,7 +243,7 @@ if __name__ == "__main__":
     
     startingTime = perf_counter()
 
-    terminationTime = 30
+    terminationTime = 300
     
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
