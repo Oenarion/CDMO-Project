@@ -86,6 +86,8 @@ class myThread(Thread):
             exit(0)
 
         m, n, l, s, D = parseInstance(fileName)
+        
+        secondDimension=n-m+3
 
         solver = Solver() # create a solver s
 
@@ -115,9 +117,9 @@ class myThread(Thread):
             [0,3,0,0]
             [0,4,0,0]
         """
-        tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(n-m+3)] for i in range(m)]
+        tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(secondDimension)] for i in range(m)]
 
-        weights=[[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(n-m+3)] for i in range(m)]
+        weights=[[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(secondDimension)] for i in range(m)]
         
         #constraint 1: each item exactly once
         for i in range(1,n+1): #iterate on 1,2,3...5
@@ -127,7 +129,7 @@ class myThread(Thread):
         # constraint if there is the origin point, then all the number after it must be n+1
         # because he have terminated the journey
         for i in range(m):
-            for j in range(2, n-m+3-1):
+            for j in range(2, secondDimension-1):
                 tmp = []
                 for k in range(depth_tours): 
                     tmp.append(Not(tours[i][j][k]))
@@ -153,11 +155,11 @@ class myThread(Thread):
 
 
         # constraint to have the exact number of 0 in the matrix       
-        solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(n-m+3)*m-n, name="at_least_k_0"))
+        solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(secondDimension)*m-n, name="at_least_k_0"))
         
         max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
         depth_distance = math.ceil(math.log2(max_distance+1))
-        distances = [[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(n-m+2)] for i in range(m)]
+        distances = [[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)]
         
         check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
         create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
@@ -169,10 +171,10 @@ class myThread(Thread):
         if str(checkModel) == 'sat':
 
             model = solver.model()
-            printer(model, "weight", m, n-m+3, depth_weight)
-            printer(model,"tour",m,n-m+3,depth_tours)
-            printer(model, "distance", m, n-m+2, depth_distance)
-            matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
+            printer(model, "weight", m, secondDimension, depth_weight)
+            printer(model,"tour",m,secondDimension,depth_tours)
+            printer(model, "distance", m, secondDimension-1, depth_distance)
+            matrix_of_distances=getMatrix(model, "distance", m, secondDimension-1, depth_distance)
 
             lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
             lastDistanceFailed = 0
@@ -180,7 +182,7 @@ class myThread(Thread):
             solutionFound = True
 
             obj = lastDistanceFound
-            sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
+            sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
             print("lastDistanceFound: ", lastDistanceFound)
 
             
@@ -224,13 +226,13 @@ class myThread(Thread):
                 if str(checkModel) == 'sat':
                     # solutionFound = True
                     model = solver.model()
-                    # printer(model,"weight",m,n-m+3,depth_weight)
-                    printer(model,"tour",m,n-m+3,depth_tours)
-                    matrix_of_distances=getMatrix(model, "distance", m, n-m+2, depth_distance)
-                    #printer(model,"distance",m,n-m+3,depth_tours)
+                    # printer(model,"weight",m,secondDimension,depth_weight)
+                    printer(model,"tour",m,secondDimension,depth_tours)
+                    matrix_of_distances=getMatrix(model, "distance", m, secondDimension-1, depth_distance)
+                    #printer(model,"distance",m,secondDimension,depth_tours)
                     lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
                     obj = lastDistanceFound
-                    sol = getMatrix(model, "tour", m, n-m+3, depth_tours)
+                    sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
                     print("lastDistanceFound: ", lastDistanceFound)
                 else:
                     # solutionFound = False
@@ -242,12 +244,17 @@ class myThread(Thread):
                 with self.lock:
                         self.data=sol
                         self.obj=obj
+                # if self.lock.acquire(blocking=False):
+                #     self.data=sol
+                #     self.obj=obj
+                # else:
+                #     print("COLLISION DETECTED D:")
 
             print("Last solution found: ", obj)
             print("sol :", sol)
-            printer(model,"tour",m,n-m+3,depth_tours)
-            printer(model,"weight",m,n-m+3,depth_weight)
-            printer(model,"distance",m,n-m+2,depth_distance)
+            printer(model,"tour",m,secondDimension,depth_tours)
+            printer(model,"weight",m,secondDimension,depth_weight)
+            printer(model,"distance",m,secondDimension-1,depth_distance)
             
 
 if __name__ == "__main__":
@@ -268,11 +275,10 @@ if __name__ == "__main__":
     
     startingTime = perf_counter()
 
-    terminationTime = 300
+    terminationTime = 60
     
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
-        print(perf_counter()-startingTime)
-        sleep(0.5)
+        sleep(0.1)
     
 
     sol,obj=mainThread.getValue()
