@@ -306,10 +306,15 @@ def main(filename):
     print("-----------------")
 
     # Risolvi il problema
-    #solver=getSolver('PULP_CBC_CMD', timeLimit=300)
-    solver=getSolver('GLPK_CMD', timeLimit=300)
-    prob.solve(solver=solver)
-    
+    try:
+        if sys.argv[2]=="1":
+            solver=getSolver('PULP_CBC_CMD', timeLimit=300)
+        else:
+            solver=getSolver('GLPK_CMD', timeLimit=300)
+        prob.solve(solver=solver)
+    except:
+        print("Please write the number of the solver you want to use, 1 or 2")
+        exit(1)
     #prob.solve()
 
     #0 no solution found, 1 optimal, 2 sub-optimal
@@ -383,7 +388,7 @@ if __name__ == "__main__":
             "time": str(int(sol_time)),
             "optimal": bool_status,
             "obj": str(objective),
-            "sol": tours.tolist()
+            "sol": tours.astype(int).tolist()
         }}
     jsonString = json.dumps(jsonData)
     print(jsonString)

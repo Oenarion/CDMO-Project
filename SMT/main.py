@@ -3,9 +3,7 @@ from z3 import *
 from printer import printer
 from threading import Thread,Lock,Event
 from time import perf_counter,sleep
-import sys
-import os
-import signal
+import sys,os,signal,platform
 from jsonToFile import saveJson
 
 try:
@@ -232,6 +230,11 @@ class myThread(Thread):
 
 if __name__ == "__main__":
 
+    #Windows and Linux use 2 different signal to kill the threads
+    if platform.system()=="Windows":
+        signalKill=signal.SIGILL
+    else:
+        signalKill=signal.SIGKILL
     # thread = Process(target=main, args=(id(counter),))
     mainThread=myThread()
     mainThread.start()
@@ -282,7 +285,6 @@ if __name__ == "__main__":
     #print(jsonString)
 
     saveJson(sys.argv[1],jsonData)
-
-    os.kill(threadPID,signal.SIGKILL) #killo tutto
+    os.kill(threadPID,signalKill) #killo tutto
     
     

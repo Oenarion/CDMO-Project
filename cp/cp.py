@@ -1,7 +1,7 @@
 from minizinc import Instance, Model, Solver
 import sys, os
 from datetime import timedelta
-import time
+from time import perf_counter
 import math
 import json
 
@@ -14,11 +14,13 @@ except:
     exit(0)
 
 def createJson(result):
+    
     rows = str(result).split("\n")
-    obj = rows[-1].split(' ')[1]
+    print(rows)
+    obj = rows[-1].split(': ')[1]
     tourStr = rows[1:len(rows)-1]
     tour = []
-
+    
     for line in tourStr:
         tmp = []
         for column in line.split(' '):
@@ -26,8 +28,8 @@ def createJson(result):
                 tmp.append(int(column))
         tour.append(tmp)
 
-    terminationTime = time.time()-startingTime
-    if math.ceil(time.time()-startingTime) >= 300:
+    terminationTime = perf_counter()-startingTime
+    if math.ceil(perf_counter()-startingTime) >= 300:
         optimal = "false"
         terminationTime = "300" 
     else:
@@ -35,7 +37,7 @@ def createJson(result):
         terminationTime = str(terminationTime) 
 
     jsonData = {"cp":{
-                "time": str(terminationTime),
+                "time": str(round(float(terminationTime),3)),
                 "optimal": optimal,
                 "obj": str(obj),
                 "sol": tour
@@ -49,11 +51,29 @@ except:
     print("Give me the name of the file like first parameter")
     exit(0)
 
-model = Model("./cp/MCP_cp.mzn")
-gecode = Solver.lookup("chuffed")
-instance = Instance(gecode, model)
+# with open("cp/CP_temp.mzn","w") as f:
+#     with open("./cp/MCP_cp.mzn","r") as f2:
+#         #f.write(str([f"{string}" for string in f2.readlines()]))
+#         f.write(str(f2.readlines()).split("\n"))
+#     f.write(searchSelection[int(sys.argv[2])])
+#     # with open("./cp/MCP_solvePrinter.txt","r") as f3:
+#     #     f.write(str([f"{string}" for string in f3.readlines()]))
 
-startingTime = time.time()
+# exit(1)
+
+#we need to pass the model of cp so that we can choose the strategy to search the solution
+try:    
+    model = Model(str(sys.argv[2]))
+except(Exception):
+    print("Model of cp needed")
+    
+if "chuffed" in sys.argv[2]:
+    solver = Solver.lookup("chuffed")
+else:
+    solver=Solver.lookup("gecode")
+instance = Instance(solver, model)
+
+startingTime = perf_counter()
 m, n, l, s, D = parseInstance(fileName)
 
 instance['m'] = m
@@ -62,8 +82,8 @@ instance['l'] = l
 instance['s'] = s
 instance['D'] = D
 
-print('heiii')
-timeout = timedelta(seconds=300-math.ceil(time.time()-startingTime))
+#print('heiii')
+timeout = timedelta(seconds=300-math.ceil(perf_counter()-startingTime))
 
 result = instance.solve(timeout=timeout)
 
@@ -75,6 +95,10 @@ jsonString = json.dumps(jsonData)
 print(jsonString)
 
 #rimozione stringa
+print(fileName)
+if "/" in fileName:
+    fileName=fileName.split("/")[-1]
+    print(fileName)
 if "inst0" in fileName:
     fileName = fileName[5:6]
 else:
@@ -84,8 +108,10 @@ print(fileName)
 
 #creazione del file JSON
 
+directory="results/CP/"
+
 try:
-    f = open(fileName + ".json", "w")
+    f = open(f"{directory}{fileName}.json", "w")
     f.write(jsonString)
     f.close()
 except Exception as e:

@@ -1,5 +1,5 @@
 import os
-
+#Automated execution of cp files
 print("benvenuto nello script MINIZINC!!!")
 os.system("echo ciaoooo")
 

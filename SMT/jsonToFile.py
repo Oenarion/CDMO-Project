@@ -2,6 +2,8 @@ import json
 
 def saveJson(filename,jsonData):
 
+    directory="results/SMT/"
+    
     filename = str(filename)
 
     filename = filename.split('/')[-1]
@@ -20,7 +22,7 @@ def saveJson(filename,jsonData):
     print(jsonString)
 
     try:
-        f = open(f"{filename}.json", "w")
+        f = open(f"{directory}{filename}.json", "w")
         f.write(jsonString)
         f.close()
     except Exception as e:

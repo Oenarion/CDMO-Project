@@ -92,12 +92,12 @@ constraint forall(i,j in NUMBER_OF_COURIERS)(
 );
 
 ann:search_ann;
-% search_ann = int_search(tours, input_order, indomain_min);
-% search_ann = int_search(tours, input_order, indomain_random);
-% search_ann = int_search(tours, first_fail, indomain_min);
-% search_ann = int_search(tours, first_fail, indomain_random);
-% search_ann = int_search(tours, dom_w_deg, indomain_min);
-search_ann = int_search(tours, dom_w_deg, indomain_random);
+search_ann = int_search(tours, input_order, indomain_min);
+% % search_ann = int_search(tours, input_order, indomain_random);
+% % search_ann = int_search(tours, first_fail, indomain_min);
+% % search_ann = int_search(tours, first_fail, indomain_random);
+%search_ann = int_search(tours, dom_w_deg, indomain_min);
+%search_ann = int_search(tours, dom_w_deg, indomain_random);
 
 solve :: search_ann
 % minimize max(distances_of_tours);

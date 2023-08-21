@@ -1,6 +1,8 @@
 import json
 
 def saveJson(filename,jsonData):
+    
+    directory="results/SAT/"
 
     filename = str(filename)
 
@@ -20,7 +22,7 @@ def saveJson(filename,jsonData):
     print(jsonString)
 
     try:
-        f = open(f"{filename}.json", "w")
+        f = open(f"{directory}{filename}.json", "w")
         f.write(jsonString)
         f.close()
     except Exception as e:

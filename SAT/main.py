@@ -11,6 +11,7 @@ from threading import Thread,Lock,Event
 from jsonToFile import saveJson
 import os
 import signal
+import platform
 
 # currentWorkingDirectory = os.path.abspath(os.getcwd())
 # programName = sys.argv[0]
@@ -251,6 +252,13 @@ class myThread(Thread):
 
 if __name__ == "__main__":
 
+
+    #Windows and Linux use 2 different signal to kill the threads
+    if platform.system()=="Windows":
+        signalKill=signal.SIGILL
+    else:
+        signalKill=signal.SIGKILL
+        
     # thread = Process(target=main, args=(id(counter),))
     mainThread=myThread()
     mainThread.start()
@@ -301,5 +309,5 @@ if __name__ == "__main__":
 
     saveJson(sys.argv[1],jsonData)
 
-    os.kill(threadPID,signal.SIGKILL) #killo tutto
+    os.kill(threadPID,signalKill) #killo tutto
 

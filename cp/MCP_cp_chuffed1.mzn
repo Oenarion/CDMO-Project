@@ -1,5 +1,5 @@
 include "globals.mzn";
-% include "chuffed.mzn";
+include "chuffed.mzn";
 
 int: m; % couriers
 int: n; % items
@@ -13,30 +13,17 @@ array[NUMBER_OF_PACKAGES] of int: s; % Weights
 set of int: DISTANCES = 1..n+1;
 array[DISTANCES, DISTANCES] of int: D; % Distances
 
-% function that returns the maximum number of items that the courier with the greater capacity could deliver
-function int: max_number_items(array[NUMBER_OF_PACKAGES] of int: weights) =
-    let {
-        array[1..n] of int: sorted_weights = sort(weights); % sort the weights array
-        int: maxItem = [j | j in 1..n-1 where 
-          sum([sorted_weights[i] | i in 1..j+1]) > max(l) 
-          /\ sum([sorted_weights[i] | i in 1..j]) <= max(l)][1];
-    } in maxItem; % return 
- 
-int: maxItem = max_number_items(s);
-
 % Domains
-int: lastElement = min(n-m+1, maxItem); % second dimension of the matrix "tours"
+int: lastElement = n-m+3; % second dimension of the matrix "tours"
 
 set of int: TOUR_DOMAIN = 1..n+1; 
 set of int: TOUR_SIZE = 1..lastElement;
-set of int: CHECK_HOME = 2..lastElement-1;
+set of int: CHECK_HOME = 3..lastElement-1;
 set of int: SUM_DOMAIN = 1..lastElement-1;
-
 
 % Variables
 array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 % in each row there is the path of the courier
-% example: 
 % [
 % 	3 1 3 3
 % 	3 2 3 3
@@ -50,13 +37,11 @@ array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 constraint forall(i in NUMBER_OF_COURIERS)(
   sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
 );
-%constraint bin_packing_capa(l, tours, s);
 
 
-% each courier start from the origin point
-% constraint forall(i in NUMBER_OF_COURIERS)(
-%   tours[i,1] = n+1 
-% );
+constraint forall(i in NUMBER_OF_COURIERS)(
+  tours[i,1] = n+1 % each courier start from the origin point
+);
 
 
 % if there is the home, then all the number after it must be n+1, because he have terminated the journey
@@ -86,8 +71,7 @@ set of int: DISTANCE_OF_COURIER = 0..sum([D[i,length(s)+1] | i in DISTANCES]) + 
 %   distances_of_tours[i] = sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN])
 % );
 
-% var DISTANCE_OF_COURIER: max_distance_of_tours = max([sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN]) | i in NUMBER_OF_COURIERS]);
-var DISTANCE_OF_COURIER: max_distance_of_tours = max([ D[n+1,tours[i,1]] + D[tours[i, lastElement], n+1] + sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN]) | i in NUMBER_OF_COURIERS]);
+var DISTANCE_OF_COURIER: max_distance_of_tours = max([sum([D[tours[i,k], tours[i,k+1]] | k in SUM_DOMAIN]) | i in NUMBER_OF_COURIERS]);
   
 
 
@@ -97,7 +81,7 @@ constraint forall(i in NUMBER_OF_COURIERS)(
 %   then length([tours[i,j] | j in TOUR_SIZE where tours[i,j] != n+1])>0
 %   endif
   % n>m -> distances_of_tours[i]>0
-  tours[i,1] != n+1 
+  tours[i,2] != n+1 
 );
 
 constraint forall(i,j in NUMBER_OF_COURIERS)(
@@ -108,31 +92,15 @@ constraint forall(i,j in NUMBER_OF_COURIERS)(
   j > i /\ l[i] == l[j] -> lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
 );
 
-
-% lex constraint: if two courier could deliver an amount of items interchangeable, 
-% i.e. the sum of the weights of items of courier x is lower than the capacity of the courier y
-% and vice versa, then insert a lexicographic order 
-% constraint forall(x,y in NUMBER_OF_COURIERS)(
-%   y > x /\ sum([s[tours[x,i]] | i in TOUR_SIZE where tours[x,i] != n+1]) <= l[y] /\
-%   sum([s[tours[y,i]] | i in TOUR_SIZE where tours[y,i] != n+1]) <= l[x]
-%   -> lex_less([tours[x,k] | k in TOUR_SIZE], [tours[y,t] | t in TOUR_SIZE]) 
-% );
-
-% constraint forall(i in NUMBER_OF_COURIERS)(
-%   tours[i, lastElement] = n+1
-% );
-
 ann:search_ann;
-% search_ann = int_search(tours, largest_smallest, indomain_min);
-% search_ann = int_search(tours, input_order, indomain_min);
-% search_ann = int_search(tours, input_order, indomain_random);
-% search_ann = int_search(tours, first_fail, indomain_min);
-% search_ann = int_search(tours, first_fail, indomain_random);
-% search_ann = int_search(tours, dom_w_deg, indomain_min);
-search_ann = int_search(tours, dom_w_deg, indomain_random);
+search_ann = int_search(tours, input_order, indomain_min);
+% % search_ann = int_search(tours, input_order, indomain_random);
+% % search_ann = int_search(tours, first_fail, indomain_min);
+% % search_ann = int_search(tours, first_fail, indomain_random);
+% % search_ann = int_search(tours, dom_w_deg, indomain_min);
+%search_ann = int_search(tours, dom_w_deg, indomain_random);
 
 solve :: search_ann
-      % :: restart_luby(lastElement*m*n)
 % minimize max(distances_of_tours);
 minimize max_distance_of_tours;
 
@@ -141,6 +109,4 @@ output["tours: \n"] ++
   [ show_int(digs,tours[i,j]) ++ " " ++ 
     if j == lastElement then "\n" else "" endif |
     i in NUMBER_OF_COURIERS, j in TOUR_SIZE ] ++ 
-  ["max distance: \(max_distance_of_tours)"] ;
-%   ++ ["\(max([sum([s[tours[i,j]] | j in TOUR_SIZE where tours[i,j] != n+1]) | i in NUMBER_OF_COURIERS]))"]
-% ++ ["\(min(l))"]
+  ["max distance: \(max_distance_of_tours)"];
