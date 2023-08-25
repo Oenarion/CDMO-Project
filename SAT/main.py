@@ -13,6 +13,12 @@ import os
 import signal
 import platform
 
+# Set verbosity level to maximum (this will show debug and error messages)
+set_param('verbose', 10)
+
+#os.nice(1)
+#os.sched_get_priority_max(1)
+
 # currentWorkingDirectory = os.path.abspath(os.getcwd())
 # programName = sys.argv[0]
 # print(currentWorkingDirectory, programName)
@@ -91,6 +97,10 @@ class myThread(Thread):
 
         solver = Solver() # create a solver s
 
+        #ATTENZIONE
+        #timeout_milliseconds = 5000
+        #solver.set("timeout", timeout_milliseconds)
+
         # encoding of the sizes of items
         max_weight = max(s) #compute the maximum weight among all items
         depth_weight = math.ceil(math.log2(max_weight+1))
@@ -164,8 +174,10 @@ class myThread(Thread):
         check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
         create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
-
+        print('CHECKPOINT 1'+'-'*20)
         checkModel = solver.check()
+        print('CHECKPOINT 2'+'-'*20)
+
         print(checkModel)
 
         if str(checkModel) == 'sat':
@@ -184,6 +196,11 @@ class myThread(Thread):
             obj = lastDistanceFound
             sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
             print("lastDistanceFound: ", lastDistanceFound)
+
+            with self.lock:
+                    self.data=sol
+                    self.obj=obj
+                    print('lock conclusa e aggiornata: ',obj)
 
             
             while(lastDistanceFound - lastDistanceFailed > 1):
@@ -221,7 +238,13 @@ class myThread(Thread):
                     solver.add(res)
     
                 # check if there is a solution
+
+                print('CHECKPOINT 1'+'-'*20)
                 checkModel = solver.check()
+                print('CHECKPOINT 2'+'-'*20)
+
+
+
                 print("checkModel = ", checkModel)
                 if str(checkModel) == 'sat':
                     # solutionFound = True
@@ -242,8 +265,10 @@ class myThread(Thread):
                 print('-'*10)
 
                 with self.lock:
-                        self.data=sol
-                        self.obj=obj
+                    self.data=sol
+                    self.obj=obj
+                    print('lock conclusa e aggiornata: ',obj)
+
                 # if self.lock.acquire(blocking=False):
                 #     self.data=sol
                 #     self.obj=obj
@@ -275,7 +300,7 @@ if __name__ == "__main__":
     
     startingTime = perf_counter()
 
-    terminationTime = 60
+    terminationTime = 120
     
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         sleep(0.1)

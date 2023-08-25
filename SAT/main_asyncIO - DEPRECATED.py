@@ -48,6 +48,14 @@ def maxNumberItem(s, l):
 
 def main():
 
+    #APERTURA DI UN FILE CHE USERO' COME SAMPLE DI STDO
+    try: 
+        f = open('outputFile.txt','w')
+    except:
+        print('errore apertura file')
+
+    f.write('INIZIO FILE PROCESSO MAIN')
+
     #m, n, l, s, D = parseInstance("instances/inst01.dat")
     
     try:
@@ -138,14 +146,16 @@ def main():
 
 
     checkModel = solver.check()
-    print(checkModel)
+    #print(checkModel)
+
+    print('controllo 1. sat?: ',str(checkModel))
 
     if str(checkModel) == 'sat':
 
         model = solver.model()
-        printer(model, "weight", m, secondDimension, depth_weight)
-        printer(model,"tour",m,secondDimension,depth_tours)
-        printer(model, "distance", m, secondDimension-1, depth_distance)
+        #printer(model, "weight", m, secondDimension, depth_weight)
+        #printer(model,"tour",m,secondDimension,depth_tours)
+        #printer(model, "distance", m, secondDimension-1, depth_distance)
         matrix_of_distances=getMatrix(model, "distance", m, secondDimension-1, depth_distance)
 
         lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
@@ -157,19 +167,20 @@ def main():
         sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
         print("lastDistanceFound: ", lastDistanceFound)
 
-        
+        print('controllo 2. inzio while')
+
         while(lastDistanceFound - lastDistanceFailed > 1):
 
             lastDistanceTrial = (lastDistanceFailed + lastDistanceFound) // 2
                 
-            print("last_distance_failed",lastDistanceFailed)
-            print("last_distance_found",lastDistanceFound)
-            print("last_distance_trial", lastDistanceTrial)
-            print("found",solutionFound)
+            #print("last_distance_failed",lastDistanceFailed)
+            #print("last_distance_found",lastDistanceFound)
+            #print("last_distance_trial", lastDistanceTrial)
+            #print("found",solutionFound)
 
             # creating a new level
             solver.push()
-            print("Try for: ", lastDistanceTrial)
+            #print("Try for: ", lastDistanceTrial)
 
             # binary encoding of the max distrance
             current_binary_max = binary_encoding(lastDistanceTrial, math.ceil(math.log2(lastDistanceTrial + 1)))
@@ -193,26 +204,37 @@ def main():
                 solver.add(res)
 
             # check if there is a solution
+
+            print('controllo 3. solver.check riga 208')
+
             checkModel = solver.check()
-            print("checkModel = ", checkModel)
+
+            print('controllo 4. solver.check riga 212. sat?: ',str(checkModel))
+
+            #print("checkModel = ", checkModel)
+
             if str(checkModel) == 'sat':
                 # solutionFound = True
                 model = solver.model()
                 # printer(model,"weight",m,secondDimension,depth_weight)
-                printer(model,"tour",m,secondDimension,depth_tours)
+                
+                
+                #printer(model,"tour",m,secondDimension,depth_tours)
+                
+                
                 matrix_of_distances=getMatrix(model, "distance", m, secondDimension-1, depth_distance)
                 #printer(model,"distance",m,secondDimension,depth_tours)
                 lastDistanceFound = np.max(np.sum(matrix_of_distances,axis=1))   #we want to check only distances < of the current max (see check_distances)
                 with lock:
                     obj = lastDistanceFound
                     sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
-                print("lastDistanceFound: ", lastDistanceFound)
+                #print("lastDistanceFound: ", lastDistanceFound)
             else:
                 # solutionFound = False
                 lastDistanceFailed = lastDistanceTrial
 
             solver.pop()
-            print('-'*10)
+            #print('-'*10)
 
             # if self.lock.acquire(blocking=False):
             #     self.data=sol
@@ -220,15 +242,29 @@ def main():
             # else:
             #     print("COLLISION DETECTED D:")
 
-        print("Last solution found: ", obj)
-        print("sol :", sol)
-        printer(model,"tour",m,secondDimension,depth_tours)
-        printer(model,"weight",m,secondDimension,depth_weight)
-        printer(model,"distance",m,secondDimension-1,depth_distance)
-            
+        #print("Last solution found: ", obj)
+        #print("sol :", sol)
+        #printer(model,"tour",m,secondDimension,depth_tours)
+        #printer(model,"weight",m,secondDimension,depth_weight)
+        #printer(model,"distance",m,secondDimension-1,depth_distance)
+
+        f.write("Last solution found: ")
+        f.write(str(obj))
+        f.write("sol :")
+        f.write(str(sol))
+        #f.write(model,"tour",m,secondDimension,depth_tours)
+        #f.write(model,"weight",m,secondDimension,depth_weight)
+        #f.write(model,"distance",m,secondDimension-1,depth_distance)
+        f.write('-'*30)
+        f.flush()
+
+    f.write('CHIUSURA FILE!!!!!!')
+    f.close()
 
 if __name__ == "__main__":
 
+    main()
+    print('fine main')
 
     #Windows and Linux use 2 different signal to kill the threads
     if platform.system()=="Windows":
@@ -245,11 +281,11 @@ if __name__ == "__main__":
     
     startingTime = perf_counter()
 
-    terminationTime = 60
+    terminationTime = 20
     
     #ERRORE DA RISOLVERE THREAD IMPALLATO!!!!!!!
     
-    task = asyncio.create_task(main())
+    #task = asyncio.create_task(main())
     
     with asyncio.timeout(terminationTime):
         task
