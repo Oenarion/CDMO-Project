@@ -130,12 +130,15 @@ def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
                 check_weight_zero_list.append(Not(weights[j][k][t])) 
             solver.add(Implies(And(zero_check),And(check_weight_zero_list)))
 
+    courierLoadSize=[]
     for i in range(m):
         binary_sum=binary_adder_(weights[i][0],weights[i][1],f"courier{i}",solver)
         for j in range(2,n-m+3):
             binary_sum=binary_adder_(weights[i][j],binary_sum,f"courier{i}_{j}",solver)
+        courierLoadSize.append(binary_sum)
         result=binary_subtraction(capacities[i],binary_sum,f"courierSub{i}",solver)
         solver.add(result)
+    return courierLoadSize
              
 def create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
     for i in range(n+1):
@@ -173,7 +176,8 @@ def create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours):
                         else:
                             bool_enc2.append(tours[x][y+1][z])
                     
-                    solver.add(Implies(And(And(bool_enc1),And(bool_enc2)), And(bool_distance_enc)))
+                    #solver.add(Implies(And(And(bool_enc1),And(bool_enc2)), And(bool_distance_enc)))
+                    solver.add(Or(Not(And(And(bool_enc1),And(bool_enc2))), And(bool_distance_enc)))
  
 def check_distances(solver,n,m,distances,maximum,index):
     binary_sum=binary_adder_(distances[index][0],distances[index][1],f"DistanceAdder{index}",solver)
@@ -217,3 +221,17 @@ def find(index,n,m,tours,depth_tours):
             list.append(And(sub_list))
 
     return list
+
+##ADDED XNOR TO TRY ADDING SYMMETRY BREAKING
+
+def XNOR(bool1,bool2):
+    return Or(And(bool1,bool2),And(Not(bool1),Not(bool2)))
+
+def eq(list1,list2):
+    res=[]
+    if len(list1)!=len(list2):
+        raise Exception("stronzo")
+    for i in range(len(list1)):
+        res.append(XNOR(list1[i],list2[i]))
+        
+    return And(res)

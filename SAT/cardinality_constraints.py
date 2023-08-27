@@ -11,7 +11,7 @@ def exactly_one_np(bool_vars, name = ""):
 
 def at_least_one_seq(bool_vars):
     return at_least_one_np(bool_vars)
-def at_most_one_seq(bool_vars, name):
+def at_most_one_seq(bool_vars, name=""):
     constraints = []
     n = len(bool_vars)
     s = [Bool(f"s_{name}_{i}") for i in range(n - 1)]
@@ -22,17 +22,17 @@ def at_most_one_seq(bool_vars, name):
         constraints.append(Or(Not(bool_vars[i]), Not(s[i-1])))
         constraints.append(Or(Not(s[i-1]), s[i]))
     return And(constraints)
-def exactly_one_seq(bool_vars, name):
+def exactly_one_seq(bool_vars, name=""):
     return And(at_least_one_seq(bool_vars), at_most_one_seq(bool_vars, name))
 
 def at_least_one_he(bool_vars):
     return at_least_one_np(bool_vars)
-def at_most_one_he(bool_vars, name):
+def at_most_one_he(bool_vars, name=""):
     if len(bool_vars) <= 4:
         return And(at_most_one_np(bool_vars))
     y = Bool(f"y_{name}")
     return And(And(at_most_one_np(bool_vars[:3] + [y])), And(at_most_one_he(bool_vars[3:] + [Not(y)], name+"_")))
-def exactly_one_he(bool_vars, name):
+def exactly_one_he(bool_vars, name=""):
     return And(at_most_one_he(bool_vars, name), at_least_one_he(bool_vars))
 
 def at_least_k_seq(bool_vars, k, name):

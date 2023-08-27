@@ -14,7 +14,7 @@ import signal
 import platform
 
 # Set verbosity level to maximum (this will show debug and error messages)
-set_param('verbose', 10)
+#set_param('verbose', 10)
 
 #os.nice(1)
 #os.sched_get_priority_max(1)
@@ -79,6 +79,7 @@ class myThread(Thread):
         
     def stop(self):
         self._stop_event.set()
+        
             
 
     def main(self):
@@ -127,9 +128,9 @@ class myThread(Thread):
             [0,3,0,0]
             [0,4,0,0]
         """
-        tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(secondDimension)] for i in range(m)]
+        tours = np.array([[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(secondDimension)] for i in range(m)])
 
-        weights=[[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(secondDimension)] for i in range(m)]
+        weights=np.array([[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(secondDimension)] for i in range(m)])
         
         #constraint 1: each item exactly once
         for i in range(1,n+1): #iterate on 1,2,3...5
@@ -163,15 +164,30 @@ class myThread(Thread):
                 tmp.append(tours[i][1][k])
             solver.add(Or(tmp))
 
-
+        #Symmetry breaking, if two couriers have same max load size, then tours rows are in alphabetic order
+        for i in range(m):
+            for j in range(i+1,m):
+                AndXNOR=eq(capacities[i],capacities[j])
+                firstPackageSubtraction=binary_subtraction(tours[j][1],tours[i][1],f"SymmetryBreaking{j}{i}",solver)
+                solver.add(Implies(AndXNOR,firstPackageSubtraction))
+                
         # constraint to have the exact number of 0 in the matrix       
         solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(secondDimension)*m-n, name="at_least_k_0"))
         
         max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
         depth_distance = math.ceil(math.log2(max_distance+1))
-        distances = [[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)]
+        distances = np.array([[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)])
         
-        check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
+        couriersLoadSize=check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
+        
+        #SYMMETRY BREAKING NUMBER 2
+        for i in range(m):
+            for j in range(i+1,m):
+                firstPackageSubtraction=binary_subtraction(capacities[i],couriersLoadSize[j],f"SymmetryBreaking2_first{i}{j}",solver)
+                secondPackageSubtraction=binary_subtraction(capacities[j],couriersLoadSize[i],f"SymmetryBreaking2_second{i}{j}",solver)
+                thirdPackageSubtraction=binary_subtraction(tours[j][1],tours[i][1],f"SymmetryBreaking2_third{i}{j}",solver)
+                solver.add(Implies(And(secondPackageSubtraction,firstPackageSubtraction),thirdPackageSubtraction))
+        
         create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
         print('CHECKPOINT 1'+'-'*20)
@@ -300,7 +316,7 @@ if __name__ == "__main__":
     
     startingTime = perf_counter()
 
-    terminationTime = 120
+    terminationTime = 300
     
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         sleep(0.1)
