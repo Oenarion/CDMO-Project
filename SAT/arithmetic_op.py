@@ -230,7 +230,7 @@ def XNOR(bool1,bool2):
 def eq(list1,list2):
     res=[]
     if len(list1)!=len(list2):
-        raise Exception("stronzo")
+        raise Exception("operation not possible, different lengths")
     for i in range(len(list1)):
         res.append(XNOR(list1[i],list2[i]))
         

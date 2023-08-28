@@ -222,30 +222,51 @@ def main(filename):
     # tours = [[[LpVariable(f"tours_{i}_{j}_{k}",lowBound=0.0, upBound=1.0, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
 
 
-    tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
+    tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0, upBound=1, cat=const.LpInteger)
 
+    
+    # Apply constraint propagation: Reduce variable domains based on initial constraints
+    # (For example, if a courier can't carry a certain item, set its variable to 0)
+    for i in range(m):
+        for j in range(2, second_dimension):
+            for k in range(1, n + 1):
+                if s[k - 1] > l[i]:
+                    tours[i][j][k].setInitialValue(0)
+
+    # Heuristic Initialization: Initialize variables with good initial solutions
+    # For example, assign the nearest item to each courier's starting point
+    # for i in range(m):
+    #     for j in range(2, second_dimension):
+    #         min_dist = np.inf
+    #         nearest_item = -1
+    #         for k in range(1, n + 1):
+    #             dist = D[0][k] + D[k][0]  # Distance from courier's starting point
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 nearest_item = k
+    #         tours[i][j][nearest_item].setInitialValue(1)
 
     #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
     #saltiamo il primo piano perchè è starting point (=0)
     for z in range(1,n+1):
         #vado a sommare tutto il piano
-        prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1.0
+        prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) == 1
         #prob += lpSum([tours[i][j][z] for j in range(second_dimension) for i in range(m)]) <= 1
 
     #stesso vincolo ma sulla profondità
     for i in range(m):
         for j in range(second_dimension):
-            prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1.0
+            prob += lpSum([tours[i][j][z] for z in range(n+1)]) == 1
             #prob += lpSum([tours[i][j][z] for z in range(n+1)]) <= 1
 
     #ulteriore vincolo: prima colonna solo origin point
     for i in range(m):
-        prob+=tours[i][0][0] == 1.0
+        prob+=tours[i][0][0] == 1
         #prob+=tours[i][0][0] <= 1
 
     #ulteriore vincolo: seconda colonna almeno un pacco
     for i in range(m):
-        prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) == 1.0
+        prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) == 1
         #prob+=lpSum([tours[i][1][k] for k in range(1,n+1)]) <= 1
 
 
@@ -268,8 +289,10 @@ def main(filename):
 
     #checking weights, sum of the sum of the depth of our matrix (first dimension excluded), multiplied by the weight of each package, 
     # trivially if the sum is 1 then we'll get the weight as result and we have to check that the sum of all of this packages is <= capacity of the courier
+    effectiveWeights=[]
     for i in range(m):
-        prob+=lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)])<=l[i]
+        effectiveWeights.append(lpSum([lpSum([tours[i][j][k] for j in range(second_dimension)])*s[k-1] for k in range(1,n+1)]))
+        prob+=effectiveWeights[-1]<=l[i]
         
 
     
@@ -302,7 +325,7 @@ def main(filename):
     prob.setObjective(getMax(prob,"dd",0,upper_bound_distances,distance_of_tours))
 
     print("-----------------")
-    print(prob.objective)
+    #print(prob.objective)
     print("-----------------")
 
     # Risolvi il problema
@@ -326,8 +349,8 @@ def main(filename):
     # prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
 
     print("-----------------")
-    for row in D:
-        print(row)
+    # for row in D:
+    #     print(row)
     print("-----------------")
 
     if ('Infeasible' in str(LpStatus[prob.status])):
@@ -335,10 +358,13 @@ def main(filename):
     else:
 
         #Stampa i valori delle variabili
+        # for var in prob.variables():
+        #     if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
+        #         print(f"{var.name} = {var.varValue}",type(var.varValue))
+        print("Current solution:")
         for var in prob.variables():
-            if not re.match("(^[0-9]_[0-9]_[0-9]_[0-9]_[0-9]$)", var.name) and not re.match("(^tours_[0-9]_[0-9]_[0-9]$)", var.name): #elimino variabili superflue
-                print(f"{var.name} = {var.varValue}",type(var.varValue))
-
+            if var.varValue > 0:
+                print(f"{var.name} = {var.varValue}")
             #if "distance_of_tours" in var.name:
             #    print(f"{var.name} = {var.varValue}")
             
@@ -351,7 +377,7 @@ def main(filename):
                 temp=0
                 for var in prob.variables():
                     if f"tours_{row}_{column}" in var.name:
-                        if var.varValue==1.0:
+                        if var.varValue==1:
                             temp=int(var.name.split("_")[-1])                
                 depthSearch[row][column]=temp
             
