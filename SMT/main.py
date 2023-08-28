@@ -15,6 +15,8 @@ except:
 
 obj=-1
 matrix_of_tours=[]
+second_dimension=-1
+m=-1
 
 
 class myThread(Thread):
@@ -56,6 +58,7 @@ class myThread(Thread):
             print("Give me the name of the file like first parameter")
             exit(0)
 
+        global m
         m, n, l, s, D = parseInstance(fileName)
 
         #refactor dei pesi per comodità ma è SUPER IMPORTANTE PER DOPO
@@ -78,7 +81,7 @@ class myThread(Thread):
 
         D=D.tolist()
         #print(D)
-
+        global second_dimension
         second_dimension = n-m+3
 
         #solver di SMT
@@ -255,11 +258,14 @@ if __name__ == "__main__":
     print(type(matrix_of_tours))
     mainThread.stop()
 
+    matrix_of_tours=matrix_of_tours.astype(int).tolist()
+    matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
+    
     if mainThread.is_alive():
         optimal = "false"
         print("thread killed")
     else:
-        terminationTime = round(perf_counter() - startingTime,3)
+        terminationTime = math.floor(perf_counter() - startingTime)
         optimal = "true"
 
     
@@ -270,7 +276,7 @@ if __name__ == "__main__":
                 "time": str(terminationTime),
                 "optimal": optimal,
                 "obj": str(int(obj)),
-                "sol": matrix_of_tours.astype(int).tolist()
+                "sol": matrix_of_tours
             }}
     else:
         jsonData = {"smt":{

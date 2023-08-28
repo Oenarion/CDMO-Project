@@ -1,11 +1,13 @@
 import numpy as np
+import math
 from pulp import *
 import re #string mather
 import sys
 from jsonToFile import saveJson
 
 
-
+m=-1
+second_dimension=-1
 
 
 # solver_list = listSolvers()
@@ -180,6 +182,7 @@ except:
 
 def main(filename):
     
+    global m
     m, n, l, s, D = parseInstance(filename)
 
 
@@ -201,7 +204,7 @@ def main(filename):
     #print(D)
 
     #start of the problem
-
+    global second_dimension
     second_dimension = n-m+3
 
     third_dimension=[i for i in range(n+1)]
@@ -319,7 +322,7 @@ def main(filename):
 
     #0 no solution found, 1 optimal, 2 sub-optimal
     print("PROB:",prob.sol_status)
-    sol_time=prob.solutionTime
+    sol_time=math.floor(prob.solutionTime)
     sol_status=prob.sol_status
         
     print("Status:", LpStatus[prob.status])
@@ -376,6 +379,9 @@ if __name__ == "__main__":
 
     sol_time,sol_status,objective,tours=main(filename=fileName)
     
+    tours=tours.astype(int).tolist()
+    tours=[[tours[i][j] for j in range(second_dimension) if tours[i][j]!=0]for i in range(m)]
+    
     bool_status= False
     
     if sol_status==1:
@@ -388,7 +394,7 @@ if __name__ == "__main__":
             "time": str(sol_time),
             "optimal": bool_status,
             "obj": str(objective),
-            "sol": tours.astype(int).tolist()
+            "sol": tours
         }}
     jsonString = json.dumps(jsonData)
     print(jsonString)

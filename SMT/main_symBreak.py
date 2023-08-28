@@ -15,6 +15,8 @@ except:
 
 obj=-1
 matrix_of_tours=[]
+second_dimension=-1
+m=-1
 
 
 class myThread(Thread):
@@ -56,7 +58,13 @@ class myThread(Thread):
             print("Give me the name of the file like first parameter")
             exit(0)
 
+        global m
+        
         m, n, l, s, D = parseInstance(fileName)
+        
+        
+        global second_dimension
+        second_dimension=n-m+3
 
         #refactor dei pesi per comodità ma è SUPER IMPORTANTE PER DOPO
         s.insert(0,0) #inserisco in posizione 0 un peso nullo... comodo per fare il calcolo con starting point
@@ -79,7 +87,6 @@ class myThread(Thread):
         D=D.tolist()
         #print(D)
 
-        second_dimension = n-m+3
 
         #solver di SMT
         solver = Solver()
@@ -103,12 +110,6 @@ class myThread(Thread):
                 solver.add(tours[i][j]<=n) #dominio 0-n
                 solver.add(tours[i][j]>=0)
 
-        #prima colonna tutti distinti
-        listSecondColumn = []
-        for i in range(m):
-            listSecondColumn.append(tours[i][1])
-
-        solver.add(Distinct(listSecondColumn))
 
         #questa la usiamo per indicare che ogni numero (indice di consegna) deve apparire una sola volta!!!
         for k in range(1,n+1):
@@ -171,7 +172,7 @@ class myThread(Thread):
 
 
         print(solver.check())
-        firstCicle=True
+        #firstCicle=True
         if str(solver.check()) != 'unsat':
             mod = solver.model()
 
@@ -291,11 +292,14 @@ if __name__ == "__main__":
     print(type(matrix_of_tours))
     mainThread.stop()
 
+    matrix_of_tours=matrix_of_tours.astype(int).tolist()
+    matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
+    
     if mainThread.is_alive():
         optimal = "false"
         print("thread killed")
     else:
-        terminationTime = round(perf_counter() - startingTime,3)
+        terminationTime = math.floor(perf_counter() - startingTime)
         optimal = "true"
 
     
@@ -306,7 +310,7 @@ if __name__ == "__main__":
                 "time": str(terminationTime),
                 "optimal": optimal,
                 "obj": str(int(obj)),
-                "sol": matrix_of_tours.astype(int).tolist()
+                "sol": matrix_of_tours
             }}
     else:
         jsonData = {"smt":{

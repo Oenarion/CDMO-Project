@@ -13,7 +13,12 @@ import os
 import signal
 import platform
 
-#set_param("verbose",10)
+# Set verbosity level to maximum (this will show debug and error messages)
+#set_param('verbose', 10)
+
+#os.nice(1)
+#os.sched_get_priority_max(1)
+
 # currentWorkingDirectory = os.path.abspath(os.getcwd())
 # programName = sys.argv[0]
 # print(currentWorkingDirectory, programName)
@@ -30,7 +35,8 @@ except:
 
 obj = -1
 sol = []
-
+secondDimension=-1
+m=-1
 
 def maxNumberItem(s, l):
     max_l = max(l)
@@ -43,7 +49,40 @@ def maxNumberItem(s, l):
         i += 1
     return i
 
-def main():
+#----bellissimo thread
+
+class myThread(Thread):
+    
+    def __init__(self):
+        Thread.__init__(self)
+        self.lock=Lock()
+        self.data=None
+        self._stop_event = Event()
+        self.threadPID=os.getpid()
+        self.obj = None
+
+        print('hey sonon il thread.. pid: ',self.threadPID)
+        
+    def run(self):
+        #running main
+        self.main()
+            
+    def getValue(self):
+        with self.lock:
+            print("richiesta di accesso a tipo:",type(self.data))
+
+            if self.data is not None:
+                return self.data.copy(),self.obj
+            return None,None
+                
+            
+        
+    def stop(self):
+        self._stop_event.set()
+        
+            
+
+    def main(self):
 
         #m, n, l, s, D = parseInstance("instances/inst01.dat")
         
@@ -53,11 +92,19 @@ def main():
             print("Give me the name of the file like first parameter")
             exit(0)
 
+        global m
+        
         m, n, l, s, D = parseInstance(fileName)
         
+        
+        global secondDimension
         secondDimension=n-m+3
-
+        
         solver = Solver() # create a solver s
+
+        #ATTENZIONE
+        #timeout_milliseconds = 5000
+        #solver.set("timeout", timeout_milliseconds)
 
         # encoding of the sizes of items
         max_weight = max(s) #compute the maximum weight among all items
@@ -85,9 +132,9 @@ def main():
             [0,3,0,0]
             [0,4,0,0]
         """
-        tours = [[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(secondDimension)] for i in range(m)]
+        tours = np.array([[[Bool(f"tour{i}_{j}_{k}") for k in range(depth_tours)] for j in range(secondDimension)] for i in range(m)])
 
-        weights=[[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(secondDimension)] for i in range(m)]
+        weights=np.array([[[Bool(f"weight{i}_{j}_{k}") for k in range(depth_weight)] for j in range(secondDimension)] for i in range(m)])
         
         #constraint 1: each item exactly once
         for i in range(1,n+1): #iterate on 1,2,3...5
@@ -99,53 +146,58 @@ def main():
         for i in range(m):
             for j in range(2, secondDimension-1):
                 tmp = []
-                tmp2 = []
                 for k in range(depth_tours): 
                     tmp.append(Not(tours[i][j][k]))
+                tmp2 = []
+                for k in range(depth_tours): 
                     tmp2.append(Not(tours[i][j+1][k]))
-                # tmp2 = []
-                # for k in range(depth_tours): 
-                #     tmp2.append(Not(tours[i][j+1][k]))
                 solver.add(Implies(And(tmp), And(tmp2)))
-                
-            # tmp constraint on the starting point
+
+        # constraint on the starting point
+        for i in range(m):
             tmp = []
-            # tmp2 constraint To achieve a fair division among drivers, 
-            # each courier must have at least an item (because n>=m)
-            tmp2 = []
             for k in range(depth_tours):
                 tmp.append(Not(tours[i][0][k]))
-                tmp2.append(tours[i][1][k])
             solver.add(And(tmp))
-            solver.add(Or(tmp2))
-
-        # for i in range(m):
-        #     tmp = []
-        #     for k in range(depth_tours):
-        #         tmp.append(Not(tours[i][0][k]))
-        #     solver.add(And(tmp))
 
         # constraint To achieve a fair division among drivers, 
         # each courier must have at least an item (because n>=m)
+        for i in range(m):
+            tmp = []
+            for k in range(depth_tours):
+                tmp.append(tours[i][1][k])
+            solver.add(Or(tmp))
+
+        #Symmetry breaking, if two couriers have same max load size, then tours rows are in alphabetic order
         # for i in range(m):
-        #     tmp = []
-        #     for k in range(depth_tours):
-        #         tmp.append(tours[i][1][k])
-        #     solver.add(Or(tmp))
-
-
+        #     for j in range(i+1,m):
+        #         AndXNOR=eq(capacities[i],capacities[j])
+        #         firstPackageSubtraction=binary_subtraction(tours[j][1],tours[i][1],f"SymmetryBreaking{j}{i}",solver)
+        #         solver.add(Implies(AndXNOR,firstPackageSubtraction))
+                
         # constraint to have the exact number of 0 in the matrix       
         solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(secondDimension)*m-n, name="at_least_k_0"))
         
         max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
         depth_distance = math.ceil(math.log2(max_distance+1))
-        distances = [[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)]
+        distances = np.array([[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)])
         
-        check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
+        couriersLoadSize=check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
+        
+        #SYMMETRY BREAKING NUMBER 2
+        for i in range(m):
+            for j in range(i+1,m):
+                firstPackageSubtraction=binary_subtraction(capacities[i],couriersLoadSize[j],f"SymmetryBreaking2_first{i}{j}",solver)
+                secondPackageSubtraction=binary_subtraction(capacities[j],couriersLoadSize[i],f"SymmetryBreaking2_second{i}{j}",solver)
+                thirdPackageSubtraction=binary_subtraction(tours[j][1],tours[i][1],f"SymmetryBreaking2_third{i}{j}",solver)
+                solver.add(Implies(And(secondPackageSubtraction,firstPackageSubtraction),thirdPackageSubtraction))
+        
         create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
-        #solver.set("timeout", 60000)
+        print('CHECKPOINT 1'+'-'*20)
         checkModel = solver.check()
+        print('CHECKPOINT 2'+'-'*20)
+
         print(checkModel)
 
         if str(checkModel) == 'sat':
@@ -160,18 +212,20 @@ def main():
             lastDistanceFailed = 0
             lastDistanceTrial = lastDistanceFound // 2
             solutionFound = True
-            
+
             obj = lastDistanceFound
             sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
             print("lastDistanceFound: ", lastDistanceFound)
-            # with self.lock:
-            #     self.data=sol
-            #     self.obj=obj
+
+            with self.lock:
+                    self.data=sol
+                    self.obj=obj
+                    print('lock conclusa e aggiornata: ',obj)
+
             
             while(lastDistanceFound - lastDistanceFailed > 1):
 
                 lastDistanceTrial = (lastDistanceFailed + lastDistanceFound) // 2
-                
                     
                 print("last_distance_failed",lastDistanceFailed)
                 print("last_distance_found",lastDistanceFound)
@@ -181,7 +235,7 @@ def main():
                 # creating a new level
                 solver.push()
                 print("Try for: ", lastDistanceTrial)
-                print(lastDistanceFound,lastDistanceTrial)               
+
                 # binary encoding of the max distrance
                 current_binary_max = binary_encoding(lastDistanceTrial, math.ceil(math.log2(lastDistanceTrial + 1)))
                 # creting the z3 binary values
@@ -204,9 +258,13 @@ def main():
                     solver.add(res)
     
                 # check if there is a solution
-                print("I'M ALIVE!")
+
+                print('CHECKPOINT 1'+'-'*20)
                 checkModel = solver.check()
-                print("STEPPROGRAM I'M STUCK!")
+                print('CHECKPOINT 2'+'-'*20)
+
+
+
                 print("checkModel = ", checkModel)
                 if str(checkModel) == 'sat':
                     # solutionFound = True
@@ -219,16 +277,17 @@ def main():
                     obj = lastDistanceFound
                     sol = getMatrix(model, "tour", m, secondDimension, depth_tours)
                     print("lastDistanceFound: ", lastDistanceFound)
-                    
                 else:
                     # solutionFound = False
                     lastDistanceFailed = lastDistanceTrial
 
-                # with self.lock:
-                #     self.data=sol
-                #     self.obj=obj
                 solver.pop()
                 print('-'*10)
+
+                with self.lock:
+                    self.data=sol
+                    self.obj=obj
+                    print('lock conclusa e aggiornata: ',obj)
 
                 # if self.lock.acquire(blocking=False):
                 #     self.data=sol
@@ -244,4 +303,67 @@ def main():
             
 
 if __name__ == "__main__":
-    main()
+
+
+    #Windows and Linux use 2 different signal to kill the threads
+    if platform.system()=="Windows":
+        signalKill=signal.SIGILL
+    else:
+        signalKill=signal.SIGKILL
+        
+    # thread = Process(target=main, args=(id(counter),))
+    mainThread=myThread()
+    mainThread.start()
+
+    threadPID=os.getpid()
+    print(threadPID)
+    
+    startingTime = perf_counter()
+
+    terminationTime = 300
+    
+    while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
+        print(perf_counter()-startingTime)
+        sleep(0.5)
+    
+
+    sol,obj=mainThread.getValue()
+    print(type(sol))
+    mainThread.stop()
+    
+    
+    sol=[[sol[i][j] for j in range(secondDimension) if sol[i][j]!=0]for i in range(m)]
+    
+    
+    if mainThread.is_alive():
+        optimal = "false"
+        print("thread killed")
+    else:
+        terminationTime = math.floor(perf_counter() - startingTime)
+        optimal = "true"
+
+    
+    print(f"execution time: {terminationTime}s", )
+
+    if sol is not None:
+
+        print("il risultato è un bel tipo del tipo: ",type(sol))
+
+        jsonData = {"sat":{ 
+                "time": str(terminationTime),
+                "optimal": optimal,
+                "obj": str(int(obj)),
+                "sol": sol
+            }}
+    else:
+        jsonData = {"sat":{
+                "time": str(terminationTime),
+                "optimal": optimal,
+                "obj": "-1",
+                "sol" : "None"
+            }}
+
+    saveJson(sys.argv[1],jsonData)
+
+    os.kill(threadPID,signalKill) #killo tutto
+

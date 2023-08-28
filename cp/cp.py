@@ -25,9 +25,11 @@ def createJson(result):
         tmp = []
         for column in line.split(' '):
             if column != '':
-                tmp.append(int(column))
+                currentInt=int(column)
+                if currentInt!=n+1:
+                    tmp.append(int(column))
         tour.append(tmp)
-
+        
     terminationTime = perf_counter()-startingTime
     if math.ceil(perf_counter()-startingTime) >= 300:
         optimal = "false"
@@ -37,7 +39,7 @@ def createJson(result):
         terminationTime = str(terminationTime) 
 
     jsonData = {"cp":{
-                "time": str(round(float(terminationTime),3)),
+                "time": str(math.floor(terminationTime)),
                 "optimal": optimal,
                 "obj": str(obj),
                 "sol": tour
@@ -66,8 +68,9 @@ try:
     model = Model(str(sys.argv[2]))
 except(Exception):
     print("Model of cp needed")
+    exit(1)
     
-if "chuffed" in sys.argv[2]:
+if "chuffed" in sys.argv[3]:
     solver = Solver.lookup("chuffed")
 else:
     solver=Solver.lookup("gecode")
