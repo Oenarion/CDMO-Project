@@ -21,6 +21,8 @@ def saveJson(filename,jsonData):
     jsonString = json.dumps(jsonData)
     print(jsonString)
 
+    print(f"{directory}{filename}.json")
+
     try:
         f = open(f"{directory}{filename}.json", "w")
         f.write(jsonString)
