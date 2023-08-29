@@ -1,0 +1,5 @@
+minizinc
+numpy
+PuLP
+z3
+z3_solver
