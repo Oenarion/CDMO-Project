@@ -225,7 +225,7 @@ def main(filename):
     # tours = [[[LpVariable(f"tours_{i}_{j}_{k}",lowBound=0.0, upBound=1.0, cat=LpInteger) for k in range(n+1)] for j in range(second_dimension)] for i in range(m)]
 
 
-    tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0.0, upBound=1.0, cat=const.LpInteger)
+    tours = LpVariable.dicts("tours", (numberOfCouriers, numberOfPosition, third_dimension), lowBound=0, upBound=1, cat=const.LpInteger)
 
 
     #vincolo di exactly one per ogni piano di una cella. un indice di consegna deve comparire exactly once
@@ -304,9 +304,9 @@ def main(filename):
 
     prob.setObjective(getMax(prob,"dd",0,upper_bound_distances,distance_of_tours))
 
-    print("-----------------")
-    print(prob.objective)
-    print("-----------------")
+    #print("-----------------")
+    #print(prob.objective)
+    #print("-----------------")
 
     # Risolvi il problema
     try:
@@ -321,16 +321,16 @@ def main(filename):
     #prob.solve()
 
     #0 no solution found, 1 optimal, 2 sub-optimal
-    print("PROB:",prob.sol_status)
+    #print("PROB:",prob.sol_status)
     sol_time=math.floor(prob.solutionTime)
     sol_status=prob.sol_status
         
-    print("Status:", LpStatus[prob.status])
+    #print("Status:", LpStatus[prob.status])
     # prob.roundSolution(epsInt=1e0,eps=1e0) #approfondire.... 
 
     print("-----------------")
-    for row in D:
-        print(row)
+    #for row in D:
+        #print(row)
     print("-----------------")
 
     if ('Infeasible' in str(LpStatus[prob.status])):
@@ -358,7 +358,7 @@ def main(filename):
                             temp=int(var.name.split("_")[-1])                
                 depthSearch[row][column]=temp
             
-        print(depthSearch)
+        #print(depthSearch)
 
         obj=[]
         #stampo controcalcolo delle distanze
