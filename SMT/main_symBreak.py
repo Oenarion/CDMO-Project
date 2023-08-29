@@ -17,7 +17,8 @@ obj=-1
 matrix_of_tours=[]
 second_dimension=-1
 m=-1
-
+firstSolutionFound=False
+startingTime=-1
 
 class myThread(Thread):
     
@@ -62,8 +63,10 @@ class myThread(Thread):
         
         m, n, l, s, D = parseInstance(fileName)
         
-        
+        global matrix_of_tours
         global second_dimension
+        global startingTime
+        global firstSolutionFound
         second_dimension=n-m+3
 
         #refactor dei pesi per comodità ma è SUPER IMPORTANTE PER DOPO
@@ -99,7 +102,7 @@ class myThread(Thread):
         c1 = [0,3,0,0]
         c2 = [0,4,0,0]
         """
-        print(type(tours[0][0]))
+        #print()
 
         #tutti i valori assegnati devono essere nel range 0-n
         for i in range(m):
@@ -171,15 +174,23 @@ class myThread(Thread):
             solver.add(Sum(effectiveDistances[i])<lastDistanceFound)
 
 
+        firstSolutionFound=True
+        startingTime=perf_counter()
         print(solver.check())
         #firstCicle=True
         if str(solver.check()) != 'unsat':
             mod = solver.model()
 
+            print(mod.eval(tours[0][1]))
             #per il printer: ricostruire matrice
-            matrix_of_tours = printer(mod,"tours",m,second_dimension)
+            for i in range(m):
+                row=[]
+                for j in range(second_dimension):
+                    row.append(mod.eval(tours[i][j]).as_long())
+                matrix_of_tours.append(row)
+            np.array(matrix_of_tours)
+            #matrix_of_tours = printer(mod,"tours",m,second_dimension)
             print(matrix_of_tours)
-            
             # for i in effectiveWeights:
             #         print(sum(i))
                 
@@ -232,8 +243,14 @@ class myThread(Thread):
 
                 if str(checkModel) == 'sat':
                     mod = solver.model()
-                
-                    matrix_of_tours = printer(mod,"tours",m,second_dimension)
+                    
+                    matrix_of_tours=[]
+                    for i in range(m):
+                        row=[]
+                        for j in range(second_dimension):
+                            row.append(mod.eval(tours[i][j]).as_long())
+                        matrix_of_tours.append(row)
+                    np.array(matrix_of_tours)
                     print(matrix_of_tours)
 
                     for i in range(m):
@@ -254,7 +271,13 @@ class myThread(Thread):
                 print('-'*10)
 
         print("Last solution found: ", obj)
-        matrix_of_tours = printer(mod,"tours",m,second_dimension)
+        matrix_of_tours=[]
+        for i in range(m):
+            row=[]
+            for j in range(second_dimension):
+                row.append(mod.eval(tours[i][j]).as_long())
+            matrix_of_tours.append(row)
+        np.array(matrix_of_tours)
 
         print(matrix_of_tours)
 
@@ -279,10 +302,13 @@ if __name__ == "__main__":
     threadPID=os.getpid()
     print(threadPID)
     
-    startingTime = perf_counter()
+    #startingTime = perf_counter()
 
     terminationTime = 300
-    
+
+    while not firstSolutionFound:
+        print("I am here")
+        sleep(10)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
@@ -292,7 +318,7 @@ if __name__ == "__main__":
     print(type(matrix_of_tours))
     mainThread.stop()
 
-    matrix_of_tours=matrix_of_tours.astype(int).tolist()
+    #matrix_of_tours=matrix_of_tours.astype(int).tolist()
     matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
     
     if mainThread.is_alive():

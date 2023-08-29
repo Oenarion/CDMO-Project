@@ -37,6 +37,8 @@ obj = -1
 sol = []
 secondDimension=-1
 m=-1
+startingTime=0
+firstSolutionFound=False
 
 def maxNumberItem(s, l):
     max_l = max(l)
@@ -92,14 +94,15 @@ class myThread(Thread):
             print("Give me the name of the file like first parameter")
             exit(0)
 
+
         global m
-        
         m, n, l, s, D = parseInstance(fileName)
         
-        
-        global secondDimension
+        global secondDimension        
         secondDimension=n-m+3
-        
+
+        global startingTime
+        global firstSolutionFound
         solver = Solver() # create a solver s
 
         #ATTENZIONE
@@ -108,11 +111,21 @@ class myThread(Thread):
 
         # encoding of the sizes of items
         max_weight = max(s) #compute the maximum weight among all items
-        depth_weight = math.ceil(math.log2(max_weight+1))
+
+        # compute the maximum weight that a courier could carries
+        max_sum_weight = s.copy()
+        max_sum_weight.sort(reverse=True)
+        max_sum_weight = sum(max_sum_weight[:secondDimension-2])
+        max_capacity = max(l) #compute the maximum capacity among all couriers
+
+        max_depth_encoding_weights = max(max_capacity, max_sum_weight)
+
+        depth_weight = math.ceil(math.log2(max_depth_encoding_weights+1))
+        #depth_weight = math.ceil(math.log2(max_weight+1))
 
         # encoding of the capacity of each couriers
         max_capacity = max(l) #compute the maximum capacity among all couriers
-        depth_capacity = math.ceil(math.log2(max_capacity+1))
+        depth_capacity = math.ceil(math.log2(max_depth_encoding_weights+1))
         capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
         for i in range(m):
             binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
@@ -179,7 +192,19 @@ class myThread(Thread):
         solver.add(at_least_k_seq(bool_vars=find(0,n,m,tours,depth_tours), k=(secondDimension)*m-n, name="at_least_k_0"))
         
         max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
-        depth_distance = math.ceil(math.log2(max_distance+1))
+
+        max_sum_distances = np.array(D)
+        max_sum_distances = max_sum_distances.reshape((len(D)*len(D[0]), ))
+        # sorted array
+        sorted_array = np.argsort(max_sum_distances)
+        sorted_array = max_sum_distances[sorted_array]
+        #print("Sorted array:", sorted_array)
+        # find n largest value
+        max_sum_distances = sum(sorted_array[-(secondDimension-1) : ])
+
+        depth_distance = math.ceil(math.log2(max_sum_distances+1))
+
+        #depth_distance = math.ceil(math.log2(max_distance+1))
         distances = np.array([[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)])
         
         couriersLoadSize=check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
@@ -194,10 +219,12 @@ class myThread(Thread):
         
         create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
+        firstSolutionFound=True
+        startingTime=perf_counter()
         print('CHECKPOINT 1'+'-'*20)
         checkModel = solver.check()
         print('CHECKPOINT 2'+'-'*20)
-
+        
         print(checkModel)
 
         if str(checkModel) == 'sat':
@@ -300,6 +327,7 @@ class myThread(Thread):
             printer(model,"tour",m,secondDimension,depth_tours)
             printer(model,"weight",m,secondDimension,depth_weight)
             printer(model,"distance",m,secondDimension-1,depth_distance)
+
             
 
 if __name__ == "__main__":
@@ -318,10 +346,11 @@ if __name__ == "__main__":
     threadPID=os.getpid()
     print(threadPID)
     
-    startingTime = perf_counter()
-
     terminationTime = 300
     
+    while not firstSolutionFound:
+        print("I'm here")
+        sleep(10)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
