@@ -111,21 +111,22 @@ class myThread(Thread):
 
         # encoding of the sizes of items
         max_weight = max(s) #compute the maximum weight among all items
+        depth_weight=math.ceil(math.log2(max_weight+1))
 
         # compute the maximum weight that a courier could carries
-        max_sum_weight = s.copy()
-        max_sum_weight.sort(reverse=True)
-        max_sum_weight = sum(max_sum_weight[:secondDimension-2])
-        max_capacity = max(l) #compute the maximum capacity among all couriers
+        # max_sum_weight = s.copy()
+        # max_sum_weight.sort(reverse=True)
+        # max_sum_weight = sum(max_sum_weight[:secondDimension-2])
+        # max_capacity = max(l) #compute the maximum capacity among all couriers
 
-        max_depth_encoding_weights = max(max_capacity, max_sum_weight)
+        # max_depth_encoding_weights = max(max_capacity, max_sum_weight)
 
-        depth_weight = math.ceil(math.log2(max_depth_encoding_weights+1))
+        #depth_weight = math.ceil(math.log2(max_depth_encoding_weights+1))
         #depth_weight = math.ceil(math.log2(max_weight+1))
 
         # encoding of the capacity of each couriers
         max_capacity = max(l) #compute the maximum capacity among all couriers
-        depth_capacity = math.ceil(math.log2(max_depth_encoding_weights+1))
+        depth_capacity = math.ceil(math.log2(max_capacity+1))
         capacities = [[Bool(f"capacity{i}_{j}") for j in range(depth_capacity)] for i in range(m)]
         for i in range(m):
             binary_enc = bin(l[i])[2:].rjust(depth_capacity, '0')
@@ -193,18 +194,18 @@ class myThread(Thread):
         
         max_distance = max(max(D, key=lambda x: max(x))) #compute the maximum distance among all the distances
 
-        max_sum_distances = np.array(D)
-        max_sum_distances = max_sum_distances.reshape((len(D)*len(D[0]), ))
-        # sorted array
-        sorted_array = np.argsort(max_sum_distances)
-        sorted_array = max_sum_distances[sorted_array]
-        #print("Sorted array:", sorted_array)
-        # find n largest value
-        max_sum_distances = sum(sorted_array[-(secondDimension-1) : ])
+        # max_sum_distances = np.array(D)
+        # max_sum_distances = max_sum_distances.reshape((len(D)*len(D[0]), ))
+        # # sorted array
+        # sorted_array = np.argsort(max_sum_distances)
+        # sorted_array = max_sum_distances[sorted_array]
+        # #print("Sorted array:", sorted_array)
+        # # find n largest value
+        # max_sum_distances = sum(sorted_array[-(secondDimension-1) : ])
 
-        depth_distance = math.ceil(math.log2(max_sum_distances+1))
+        # depth_distance = math.ceil(math.log2(max_sum_distances+1))
 
-        #depth_distance = math.ceil(math.log2(max_distance+1))
+        depth_distance = math.ceil(math.log2(max_distance+1))
         distances = np.array([[[Bool(f"distance{i}_{j}_{k}") for k in range(depth_distance)] for j in range(secondDimension-1)] for i in range(m)])
         
         couriersLoadSize=check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities)
@@ -349,8 +350,8 @@ if __name__ == "__main__":
     terminationTime = 300
     
     while not firstSolutionFound:
-        print("I'm here")
-        sleep(10)
+        #print("I'm here")
+        sleep(0.1)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
