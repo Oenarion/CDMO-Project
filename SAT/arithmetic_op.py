@@ -54,57 +54,9 @@ def binary_adder_(a,b,name,solver):
         solver.add(c[i] ==\
             Or(And(a[i],b[i]),And(a[i],c[i+1]),And(b[i],c[i+1])))
     
-    # d.insert(0,c[0])
-    return (d)
-
-def binary_adder_for_subtraction(a,b,name,solver):
-    # effettuo soma binaria di a + b (che sono una lista[][] di True-false)
-    # somma la stessa cardinalità
-
-    len_a = len(a)
-    len_b = len(b)
-    max_len = max(len_a,len_b)
-
-    if len_a != max_len: #padding per a
-        delta = max_len - len_a
-        a1 = [Bool(f"paddingAdd1_{name}_{k}") for k in range(delta)]
-        a1.extend(a)
-        a=a1
-        
-        for i in range(delta):
-            solver.add(Not(a[i]))
-
-    if len_b != max_len: #padding per b
-        delta = max_len - len_b
-        b1 = [Bool(f"paddingAdd2_{name}_{k}") for k in range(delta)]
-        b1.extend(b)
-        b=b1
-        
-        for i in range(delta):
-            solver.add(Not(b[i]))
-    
-    #ora abbiamo i numeri con stesso padding (cardinalità)
-
-    d = [Bool(f"d_{name}_{k}") for k in range(max_len)]
-    c = [Bool(f"c_{name}_{k}") for k in range(max_len+1)] #carry max_len+1
-    
-    solver.add(Not(c[max_len]))
-    
-    #ora finamente dopo un enorme preambolo faccio la somma bit-bit
-    for i in range(len(d)):
-        #double implication
-        solver.add((d[i] == \
-                    Or(And(a[i],Not(b[i]),Not(c[i+1])),\
-                        And(Not(a[i]),b[i],Not(c[i+1])),\
-                        And(Not(a[i]),Not(b[i]),c[i+1]),\
-                        And(a[i],b[i],c[i+1]))))
-
-        #if(i>0):
-        solver.add(c[i] ==\
-            Or(And(a[i],b[i]),And(a[i],c[i+1]),And(b[i],c[i+1])))
-    
     d.insert(0,c[0])
     return (d)
+
 
 def binary_subtraction(enc1,enc2,name,solver):
     len_a = len(enc1)
@@ -143,7 +95,7 @@ def binary_subtraction(enc1,enc2,name,solver):
     # for i in range(delta):
     #     solver.add(reversed_enc[i])
 
-    return binary_adder_for_subtraction(a,complement2,f"final_{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
+    return binary_adder_(a,complement2[1:],f"final_{name}",solver)[0]   #returns the carry out, 1 if positive, 0 if not
 
 def check_weight(solver,n,m,s,depth_tours,depth_weight,tours,weights,capacities):       #TO CHECK
     
