@@ -34,7 +34,7 @@ array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 % constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
 
 %domain weights 
-int: maxWeight = max(s);
+int: maxWeight = max(l);
 set of int: LOAD_DOMAIN = 0..maxWeight;
 array[NUMBER_OF_COURIERS] of var LOAD_DOMAIN: effectiveLoad;
 
