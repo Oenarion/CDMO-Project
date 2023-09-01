@@ -46,10 +46,19 @@ array[NUMBER_OF_COURIERS, TOUR_SIZE] of var TOUR_DOMAIN: tours;
 % each item must be present only one time
 % constraint alldifferent([tours[i,j] | i in NUMBER_OF_COURIERS, j in TOUR_SIZE where tours[i,j]!=n+1]);
 
+%domain weights 
+int: maxWeight = max(s);
+set of int: LOAD_DOMAIN = 0..maxWeight;
+array[NUMBER_OF_COURIERS] of var LOAD_DOMAIN: effectiveLoad;
+
 %constraint on the size of the vehicle
 constraint forall(i in NUMBER_OF_COURIERS)(
-  sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1]) <= l[i]
+  effectiveLoad[i] = sum([s[tours[i,j]] |  j in TOUR_SIZE where tours[i,j] != n+1])
 );
+constraint forall(i in NUMBER_OF_COURIERS)(
+  effectiveLoad[i] <= l[i]
+);
+
 %constraint bin_packing_capa(l, tours, s);
 
 
@@ -100,23 +109,22 @@ constraint forall(i in NUMBER_OF_COURIERS)(
   tours[i,1] != n+1 
 );
 
-constraint forall(i,j in NUMBER_OF_COURIERS)(
-%forall(j in NUMBER_OF_COURIERS)(
-%   if j > i /\ l[i] == l[j] 
-%   then lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
-%   endif
-  j > i /\ l[i] == l[j] -> lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
-);
+% constraint forall(i,j in NUMBER_OF_COURIERS)(
+% %forall(j in NUMBER_OF_COURIERS)(
+% %   if j > i /\ l[i] == l[j] 
+% %   then lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+% %   endif
+%   j > i /\ l[i] == l[j] -> lex_lesseq([tours[i,k] | k in TOUR_SIZE], [tours[j,t] | t in TOUR_SIZE])
+% );
 
 
 % lex constraint: if two courier could deliver an amount of items interchangeable, 
 % i.e. the sum of the weights of items of courier x is lower than the capacity of the courier y
 % and vice versa, then insert a lexicographic order 
-% constraint forall(x,y in NUMBER_OF_COURIERS)(
-%   y > x /\ sum([s[tours[x,i]] | i in TOUR_SIZE where tours[x,i] != n+1]) <= l[y] /\
-%   sum([s[tours[y,i]] | i in TOUR_SIZE where tours[y,i] != n+1]) <= l[x]
-%   -> lex_less([tours[x,k] | k in TOUR_SIZE], [tours[y,t] | t in TOUR_SIZE]) 
-% );
+constraint forall(x,y in NUMBER_OF_COURIERS)(
+  y > x /\ effectiveLoad[x] <= l[y] /\ effectiveLoad[y] <= l[x]
+  -> lex_less([tours[x,k] | k in TOUR_SIZE], [tours[y,t] | t in TOUR_SIZE]) 
+);
 
 % constraint forall(i in NUMBER_OF_COURIERS)(
 %   tours[i, lastElement] = n+1
