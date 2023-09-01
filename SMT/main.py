@@ -17,6 +17,9 @@ obj=-1
 matrix_of_tours=[]
 second_dimension=-1
 m=-1
+startingTime=-1
+firstSolutionFound=False
+deletedCouriers=[]
 
 
 class myThread(Thread):
@@ -48,7 +51,25 @@ class myThread(Thread):
     def stop(self):
         self._stop_event.set()
             
+    #m courier, l load, s size
+    def deleteUselessCouriers(self,m,l,s):
+        #sort s and l
+        sortedS=s*1
+        sortedS.sort()
         
+        sortedL=l*1
+        sortedL.sort()
+        
+        #now that we sorted couriers and packages we check if all couriers could at least
+        #carry the smallest packages assigned to them
+        #For example: if there is a package of size 5 and two couriers of load size 5 only
+        #one will carry the item
+        delCouriers=[]
+        for i in range(len(l)):
+            if sortedL[i]<sortedS[i]:
+                currIndex=l.index(sortedL[i])
+                delCouriers.append(currIndex)
+        return delCouriers    
     
     def main(self):
         
@@ -59,7 +80,21 @@ class myThread(Thread):
             exit(0)
 
         global m
+        global firstSolutionFound
+        global startingTime
+        global matrix_of_tours
         m, n, l, s, D = parseInstance(fileName)
+        
+        global deletedCouriers
+        deletedCouriers=self.deleteUselessCouriers(m,l,s)
+        m=m-len(deletedCouriers)
+        
+        newL=[]
+        for i in range(len(l)):
+            if i not in deletedCouriers:
+                newL.append(l[i])
+                
+        l=newL
 
         #refactor dei pesi per comodità ma è SUPER IMPORTANTE PER DOPO
         s.insert(0,0) #inserisco in posizione 0 un peso nullo... comodo per fare il calcolo con starting point
@@ -160,13 +195,21 @@ class myThread(Thread):
             solver.add(Sum(effectiveDistances[i])<lastDistanceFound)
 
 
+        firstSolutionFound=True
+        startingTime=perf_counter()
         print(solver.check())
 
         if str(solver.check()) != 'unsat':
             mod = solver.model()
 
             #per il printer: ricostruire matrice
-            matrix_of_tours = printer(mod,"tours",m,second_dimension)
+            for i in range(m):
+                row=[]
+                for j in range(second_dimension):
+                    row.append(mod.eval(tours[i][j]).as_long())
+                matrix_of_tours.append(row)
+            np.array(matrix_of_tours)
+            #matrix_of_tours = printer(mod,"tours",m,second_dimension)
             print(matrix_of_tours)
 
             couriers_distances = np.zeros(m)
@@ -198,8 +241,14 @@ class myThread(Thread):
 
                 if str(checkModel) == 'sat':
                     mod = solver.model()
-                
-                    matrix_of_tours = printer(mod,"tours",m,second_dimension)
+                    matrix_of_tours=[]
+                    for i in range(m):
+                        row=[]
+                        for j in range(second_dimension):
+                            row.append(mod.eval(tours[i][j]).as_long())
+                        matrix_of_tours.append(row)
+                    np.array(matrix_of_tours)
+                    #matrix_of_tours = printer(mod,"tours",m,second_dimension)
                     print(matrix_of_tours)
 
                     for i in range(m):
@@ -220,7 +269,14 @@ class myThread(Thread):
                 print('-'*10)
 
         print("Last solution found: ", obj)
-        matrix_of_tours = printer(mod,"tours",m,second_dimension)
+        matrix_of_tours=[]
+        for i in range(m):
+            row=[]
+            for j in range(second_dimension):
+                row.append(mod.eval(tours[i][j]).as_long())
+            matrix_of_tours.append(row)
+        np.array(matrix_of_tours)
+        #matrix_of_tours = printer(mod,"tours",m,second_dimension)
 
         print(matrix_of_tours)
 
@@ -245,10 +301,13 @@ if __name__ == "__main__":
     threadPID=os.getpid()
     print(threadPID)
     
-    startingTime = perf_counter()
+    #startingTime = perf_counter()
 
     terminationTime = 300
     
+    while not firstSolutionFound:
+        #print("I am here")
+        sleep(0.1)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
@@ -258,8 +317,12 @@ if __name__ == "__main__":
     print(type(matrix_of_tours))
     mainThread.stop()
 
-    matrix_of_tours=matrix_of_tours.astype(int).tolist()
+    #matrix_of_tours=matrix_of_tours.astype(int).tolist()
     matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
+    
+    for i in deletedCouriers:
+        matrix_of_tours.insert(i,[])
+    
     
     if mainThread.is_alive():
         optimal = "false"

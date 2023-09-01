@@ -32,6 +32,9 @@ obj = -1
 sol = []
 secondDimension=-1
 m=-1
+firstSolutionFound=-1
+startingTime=-1
+deletedCouriers=[]
 
 
 def maxNumberItem(s, l):
@@ -74,6 +77,26 @@ class myThread(Thread):
     def stop(self):
         self._stop_event.set()
         
+    #m courier, l load, s size
+    def deleteUselessCouriers(self,m,l,s):
+        #sort s and l
+        sortedS=s*1
+        sortedS.sort()
+        
+        sortedL=l*1
+        sortedL.sort()
+        
+        #now that we sorted couriers and packages we check if all couriers could at least
+        #carry the smallest packages assigned to them
+        #For example: if there is a package of size 5 and two couriers of load size 5 only
+        #one will carry the item
+        delCouriers=[]
+        for i in range(len(l)):
+            if sortedL[i]<sortedS[i]:
+                currIndex=l.index(sortedL[i])
+                delCouriers.append(currIndex)
+        return delCouriers    
+    
 
     def main(self):
 
@@ -88,8 +111,20 @@ class myThread(Thread):
             global m
         
             m, n, l, s, D = parseInstance(fileName)
+            
+            global deletedCouriers
+            deletedCouriers=self.deleteUselessCouriers(m,l,s)
+            m=m-len(deletedCouriers)
+            
+            newL=[]
+            for i in range(len(l)):
+                if i not in deletedCouriers:
+                    newL.append(l[i])
+                    
+            l=newL
         
-        
+            global firstSolutionFound
+            global startingTime
             global secondDimension
             secondDimension=n-m+3
 
@@ -181,6 +216,8 @@ class myThread(Thread):
             create_distances(solver,n,m,D,depth_tours,depth_distance,distances,tours)
 
             #solver.set("timeout", 60000)
+            firstSolutionFound=True
+            startingTime=perf_counter()
             checkModel = solver.check()
             print(checkModel)
 
@@ -299,6 +336,9 @@ if __name__ == "__main__":
 
     terminationTime = 300
     
+    while not firstSolutionFound:
+        print("I'm here")
+        sleep(10)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         sleep(0.1)
     
@@ -308,6 +348,10 @@ if __name__ == "__main__":
     mainThread.stop()
 
     sol=[[sol[i][j] for j in range(secondDimension) if sol[i][j]!=0]for i in range(m)]
+    
+    #insert of empty cells for couriers not used
+    for i in deletedCouriers:
+        sol.insert(i,[])
 
     if mainThread.is_alive():
         optimal = "false"

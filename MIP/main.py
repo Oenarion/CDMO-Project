@@ -8,6 +8,7 @@ from jsonToFile import saveJson
 
 m=-1
 second_dimension=-1
+deletedCouriers=[]
 
 
 # solver_list = listSolvers()
@@ -141,6 +142,26 @@ def getMax(prob,name,lowerbound,upperbound,distances):
 
     return y
 
+#m courier, l load, s size
+def deleteUselessCouriers(m,l,s):
+    #sort s and l
+    sortedS=s*1
+    sortedS.sort()
+    
+    sortedL=l*1
+    sortedL.sort()
+    
+    #now that we sorted couriers and packages we check if all couriers could at least
+    #carry the smallest packages assigned to them
+    #For example: if there is a package of size 5 and two couriers of load size 5 only
+    #one will carry the item
+    delCouriers=[]
+    for i in range(len(l)):
+        if sortedL[i]<sortedS[i]:
+            currIndex=l.index(sortedL[i])
+            delCouriers.append(currIndex)
+    return delCouriers
+
 
 """
 ___________________TEST STAMPA GETMAX()
@@ -184,6 +205,17 @@ def main(filename):
     
     global m
     m, n, l, s, D = parseInstance(filename)
+    
+    global deletedCouriers
+    deletedCouriers=deleteUselessCouriers(m,l,s)
+    m=m-len(deletedCouriers)
+    
+    newL=[]
+    for i in range(len(l)):
+        if i not in deletedCouriers:
+            newL.append(l[i])
+            
+    l=newL
 
 
     #--SUPER IMPORTANTE!!!!--------
@@ -381,6 +413,10 @@ if __name__ == "__main__":
     
     tours=tours.astype(int).tolist()
     tours=[[tours[i][j] for j in range(second_dimension) if tours[i][j]!=0]for i in range(m)]
+    
+    #insert of empty cells for couriers not used
+    for i in deletedCouriers:
+        tours.insert(i,[])
     
     bool_status= False
     

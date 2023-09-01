@@ -39,6 +39,8 @@ secondDimension=-1
 m=-1
 startingTime=0
 firstSolutionFound=False
+deletedCouriers=[]
+
 
 def maxNumberItem(s, l):
     max_l = max(l)
@@ -82,6 +84,27 @@ class myThread(Thread):
     def stop(self):
         self._stop_event.set()
         
+    
+    #m courier, l load, s size
+    def deleteUselessCouriers(self,m,l,s):
+        #sort s and l
+        sortedS=s*1
+        sortedS.sort()
+        
+        sortedL=l*1
+        sortedL.sort()
+        
+        #now that we sorted couriers and packages we check if all couriers could at least
+        #carry the smallest packages assigned to them
+        #For example: if there is a package of size 5 and two couriers of load size 5 only
+        #one will carry the item
+        delCouriers=[]
+        for i in range(len(l)):
+            if sortedL[i]<sortedS[i]:
+                currIndex=l.index(sortedL[i])
+                delCouriers.append(currIndex)
+        return delCouriers
+        
             
 
     def main(self):
@@ -97,6 +120,17 @@ class myThread(Thread):
 
         global m
         m, n, l, s, D = parseInstance(fileName)
+        
+        global deletedCouriers
+        deletedCouriers=self.deleteUselessCouriers(m,l,s)
+        m=m-len(deletedCouriers)
+        
+        newL=[]
+        for i in range(len(l)):
+            if i not in deletedCouriers:
+                newL.append(l[i])
+                
+        l=newL
         
         global secondDimension        
         secondDimension=n-m+3
@@ -363,6 +397,10 @@ if __name__ == "__main__":
     
     
     sol=[[sol[i][j] for j in range(secondDimension) if sol[i][j]!=0]for i in range(m)]
+    
+    #insert of empty cells for couriers not used
+    for i in deletedCouriers:
+        sol.insert(i,[])
     
     
     if mainThread.is_alive():

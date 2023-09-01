@@ -19,6 +19,7 @@ second_dimension=-1
 m=-1
 firstSolutionFound=False
 startingTime=-1
+deletedCouriers=[]
 
 class myThread(Thread):
     
@@ -49,6 +50,27 @@ class myThread(Thread):
     def stop(self):
         self._stop_event.set()
             
+    #m courier, l load, s size
+    def deleteUselessCouriers(self,m,l,s):
+        #sort s and l
+        sortedS=s*1
+        sortedS.sort()
+        
+        sortedL=l*1
+        sortedL.sort()
+        
+        #now that we sorted couriers and packages we check if all couriers could at least
+        #carry the smallest packages assigned to them
+        #For example: if there is a package of size 5 and two couriers of load size 5 only
+        #one will carry the item
+        delCouriers=[]
+        for i in range(len(l)):
+            if sortedL[i]<sortedS[i]:
+                currIndex=l.index(sortedL[i])
+                delCouriers.append(currIndex)
+        return delCouriers
+            
+        
         
     
     def main(self):
@@ -62,6 +84,20 @@ class myThread(Thread):
         global m
         
         m, n, l, s, D = parseInstance(fileName)
+        
+        global deletedCouriers
+        deletedCouriers=self.deleteUselessCouriers(m,l,s)
+        m=m-len(deletedCouriers)
+        
+        newL=[]
+        for i in range(len(l)):
+            if i not in deletedCouriers:
+                newL.append(l[i])
+                
+        l=newL
+        # print(m)
+        # print(l)
+        # print(s)
         
         global matrix_of_tours
         global second_dimension
@@ -307,8 +343,8 @@ if __name__ == "__main__":
     terminationTime = 300
 
     while not firstSolutionFound:
-        print("I am here")
-        sleep(10)
+        #print("I am here")
+        sleep(0.1)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         print(perf_counter()-startingTime)
         sleep(0.5)
@@ -320,6 +356,10 @@ if __name__ == "__main__":
 
     #matrix_of_tours=matrix_of_tours.astype(int).tolist()
     matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
+    
+    #insert of empty cells for couriers not used
+    for i in deletedCouriers:
+        matrix_of_tours.insert(i,[])
     
     if mainThread.is_alive():
         optimal = "false"
