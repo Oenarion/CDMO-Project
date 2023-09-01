@@ -1,5 +1,4 @@
 minizinc
 numpy
 PuLP
-z3
-z3_solver
+z3-solver==4.12.1.0
