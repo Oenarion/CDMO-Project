@@ -12,7 +12,7 @@ RUN apt-get update \
   && apt-get install -y python3 \ 
   && apt-get install -y python3-pip \
   && python3 -m pip install -r requirements.txt  \
-  && apt-get install glpk-utils
+  && apt-get install -y glpk-utils
 # What to run when the container starts
 # Use this command to keep the container up and use the terminal inside of it
 
