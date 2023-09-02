@@ -30,7 +30,13 @@ python3 "cp/cp.py" "../instances/$name_file_instance" "cp/$mzn_file" "$solver"
 ```
 __name_file_instance__ is the name of the file of the instance that we want to run (ex. __inst01.dat__). 
 
-__mzn_file__ is the file containing the minizinc model with the search strategy we want to use (__MCP_cp_firstFailRand_gecode_no_sym.mzn__, __MCP_cp_firstFail_chuffed_no_sym.mzn__, __MCP_cp_wdegRand_gecode.mzn__,__MCP_cp_firstFailRand_gecode_sym.mzn__, __MCP_cp_firstFail_chuffed_sym.mzn__,__MCP_cp_wdegRand_gecode_restart.mzn__).
+__mzn_file__ is the file containing the minizinc model with the search strategy we want to use. It is possible to choose between:
+- MCP_cp_firstFailRand_gecode_no_sym.mzn
+- MCP_cp_firstFail_chuffed_no_sym.mzn
+- MCP_cp_wdegRand_gecode.mzn
+- MCP_cp_firstFailRand_gecode_sym.mzn
+- MCP_cp_firstFail_chuffed_sym.mzn
+- MCP_cp_wdegRand_gecode_restart.mzn.
 
 __solver__ is the solver that we want to use (it depends on the mzn file selected): it is possible to use __gecode__ or __chuffed__.
 

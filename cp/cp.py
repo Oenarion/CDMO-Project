@@ -5,6 +5,7 @@ from time import perf_counter
 import math
 import json
 
+deletedCouriers=[]
 
 try:
     sys.path.insert(0, 'instances')
@@ -29,6 +30,10 @@ def createJson(result):
                 if currentInt!=n+1:
                     tmp.append(int(column))
         tour.append(tmp)
+
+    #insert of empty cells for couriers not used
+    for i in deletedCouriers:
+        tour.insert(i,[])
         
     terminationTime = perf_counter()-startingTime
     if math.ceil(perf_counter()-startingTime) >= 300:
@@ -45,6 +50,26 @@ def createJson(result):
                 "sol": tour
             }}
     return jsonData
+
+
+def deleteUselessCouriers(m,l,s):
+    #sort s and l
+    sortedS=s*1
+    sortedS.sort()
+    
+    sortedL=l*1
+    sortedL.sort()
+    
+    #now that we sorted couriers and packages we check if all couriers could at least
+    #carry the smallest packages assigned to them
+    #For example: if there is a package of size 5 and two couriers of load size 5 only
+    #one will carry the item
+    delCouriers=[]
+    for i in range(len(l)):
+        if sortedL[i]<sortedS[i]:
+            currIndex=l.index(sortedL[i])
+            delCouriers.append(currIndex)
+    return delCouriers    
 
 
 try:
@@ -78,6 +103,17 @@ instance = Instance(solver, model)
 
 startingTime = perf_counter()
 m, n, l, s, D = parseInstance(fileName)
+
+
+deletedCouriers=deleteUselessCouriers(m,l,s)
+m=m-len(deletedCouriers)
+
+newL=[]
+for i in range(len(l)):
+    if i not in deletedCouriers:
+        newL.append(l[i])
+        
+l=newL
 
 instance['m'] = m
 instance['n'] = n
