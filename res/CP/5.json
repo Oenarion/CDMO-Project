@@ -1,0 +1,56 @@
+{
+    "cp_domwdeg_random_gecode_no_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    },
+    "cp_domwdeg_random_gecode_no_sb_restart_luby": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    },
+    "cp_first_fail_chuffed_no_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    },
+    "cp_first_fail_chuffed_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    },
+    "cp_first_fail_random_gecode_no_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    },
+    "cp_first_fail_random_gecode_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "206",
+        "sol": [
+            [2],
+            [1,3]
+        ]
+    }
+}

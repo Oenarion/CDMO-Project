@@ -8,7 +8,7 @@ import json
 deletedCouriers=[]
 
 try:
-    sys.path.insert(0, 'instances')
+    sys.path.insert(0, 'parser')
     from parser import *
 except:
     print("Please move into the main folder of the project :)")
@@ -37,16 +37,16 @@ def createJson(result):
         
     terminationTime = perf_counter()-startingTime
     if math.ceil(perf_counter()-startingTime) >= 300:
-        optimal = "false"
-        terminationTime = "300" 
+        optimal = False
+        terminationTime = 300 
     else:
-        optimal = "true"
+        optimal = True
         terminationTime = str(terminationTime) 
 
     jsonData = {"cp":{
-                "time": terminationTime.split('.')[0],
+                "time": int(terminationTime.split('.')[0]),
                 "optimal": optimal,
-                "obj": str(obj),
+                "obj": int(obj),
                 "sol": tour
             }}
     return jsonData
@@ -127,6 +127,12 @@ timeout = timedelta(seconds=300-math.ceil(perf_counter()-startingTime))
 result = instance.solve(timeout=timeout)
 
 print(result)
+
+if not result:
+    terminationTime=300
+    result="N/A"
+    optimal=False
+    tours=[[]]*m
 
 jsonData = createJson(result)
     

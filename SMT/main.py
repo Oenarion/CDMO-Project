@@ -7,7 +7,7 @@ import sys,os,signal,platform
 from jsonToFile import saveJson
 
 try:
-    sys.path.insert(0, 'instances')
+    sys.path.insert(0, 'parser')
     from parser import *
 except:
     print("Please move into the main folder of the project :)")
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         #print("I am here")
         sleep(0.1)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
-        print(perf_counter()-startingTime)
+        #print(perf_counter()-startingTime)
         sleep(0.5)
     
 
@@ -318,35 +318,39 @@ if __name__ == "__main__":
     mainThread.stop()
 
     #matrix_of_tours=matrix_of_tours.astype(int).tolist()
-    matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
+    if matrix_of_tours:
+        matrix_of_tours=[[matrix_of_tours[i][j] for j in range(second_dimension) if matrix_of_tours[i][j]!=0]for i in range(m)]
     
     for i in deletedCouriers:
         matrix_of_tours.insert(i,[])
     
     
     if mainThread.is_alive():
-        optimal = "false"
+        optimal = False
         print("thread killed")
     else:
         terminationTime = math.floor(perf_counter() - startingTime)
-        optimal = "true"
+        optimal = True
 
     
     print(f"execution time: {terminationTime}s", )
 
     if matrix_of_tours is not None:
         jsonData = {"smt":{ 
-                "time": str(terminationTime),
+                "time": terminationTime,
                 "optimal": optimal,
-                "obj": str(int(obj)),
+                "obj": int(obj),
                 "sol": matrix_of_tours
             }}
     else:
+        matrix_of_tours=[]
+        for i in range(m):
+            matrix_of_tours.append([])
         jsonData = {"smt":{
-                "time": str(terminationTime),
+                "time": terminationTime,
                 "optimal": optimal,
-                "obj": "-1",
-                "sol" : "None"
+                "obj": "N/A",
+                "sol" : matrix_of_tours
             }}
 
     

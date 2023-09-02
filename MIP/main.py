@@ -195,7 +195,7 @@ D = [[0, 3, 3, 6, 5, 6, 6, 2], #distances
 """
 
 try:
-    sys.path.insert(0, 'instances')
+    sys.path.insert(0, 'parser')
     from parser import *
 except:
     print("Please move into the main folder of the project :)")
@@ -425,11 +425,13 @@ if __name__ == "__main__":
     
     if not bool_status:
         sol_time=300
-        
+    
+    if objective==0:
+        objective="N/A"
     jsonData = {"MIP":{
-            "time": str(sol_time),
+            "time": sol_time,
             "optimal": bool_status,
-            "obj": str(objective),
+            "obj": objective,
             "sol": tours
         }}
     jsonString = json.dumps(jsonData)

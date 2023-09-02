@@ -1,0 +1,22 @@
+{
+    "mip_glpk_cmd": {
+        "time": "2",
+        "optimal": true,
+        "obj": "12",
+        "sol": [
+            [5,6,3],
+            [4,2],
+            [7,1]
+        ]
+    },
+    "mip_pulp_cbc_cmd": {
+        "time": "5",
+        "optimal": true,
+        "obj": "12",
+        "sol": [
+            [5,4,2],
+            [3,7],
+            [1,6]
+        ]
+    }
+}

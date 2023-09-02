@@ -4,11 +4,16 @@ def printer(model,string_name,i,j):
 
     matrix = np.zeros((i,j))
 
+    #print(type(model))
     # itera attraverso le variabili del modello
+    #print(model.decls())
+
     for decl in model:
+        #print(type(decl))
         
         # ottieni il nome della variabile
         name = decl.name()
+        #print(name)
         if name.startswith(string_name):
 
             #rimuovo tour dal nome

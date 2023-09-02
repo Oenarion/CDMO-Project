@@ -1,0 +1,104 @@
+{
+    "cp_domwdeg_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "244",
+        "sol": [
+            [10,1,7,4],
+            [13],
+            [9],
+            [12],
+            [8],
+            [11],
+            [2],
+            [3],
+            [5],
+            [6]
+        ]
+    },
+    "cp_domwdeg_random_gecode_no_sb_restart_luby": {
+        "time": "300",
+        "optimal": false,
+        "obj": "244",
+        "sol": [
+            [8],
+            [11,7,6,2],
+            [9],
+            [4],
+            [5],
+            [1],
+            [13],
+            [10],
+            [12],
+            [3]
+        ]
+    },
+    "cp_first_fail_chuffed_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "244",
+        "sol": [
+            [1,11,13],
+            [2,12],
+            [3],
+            [4],
+            [5],
+            [6],
+            [7],
+            [8],
+            [9],
+            [10]
+        ]
+    },
+    "cp_first_fail_chuffed_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "244",
+        "sol": [
+            [1,11,13],
+            [2,12],
+            [3],
+            [4],
+            [5],
+            [6],
+            [7],
+            [8],
+            [9],
+            [10]
+        ]
+    },
+    "cp_first_fail_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "244",
+        "sol": [
+            [7,4,2],
+            [3],
+            [13],
+            [11],
+            [1],
+            [8],
+            [10],
+            [6,9],
+            [5],
+            [12]
+        ]
+    },
+    "cp_first_fail_random_gecode_sb": {
+        "time": "2",
+        "optimal": true,
+        "obj": "244",
+        "sol": [
+            [3,2],
+            [4],
+            [6,1],
+            [7],
+            [8],
+            [9],
+            [10],
+            [11,5],
+            [12],
+            [13]
+        ]
+    }
+}

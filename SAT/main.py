@@ -22,7 +22,7 @@ import platform
 #pathParser = currentWorkingDirectory + programName.split("/")
 
 try:
-    sys.path.insert(0, 'instances')
+    sys.path.insert(0, 'parser')
     from parser import *
 except:
     print("Please move into the main folder of the project :)")
@@ -279,7 +279,6 @@ class myThread(Thread):
                     # check if there is a solution
                     print("I'M ALIVE!")
                     checkModel = solver.check()
-                    print("STEPPROGRAM I'M STUCK!")
                     print("checkModel = ", checkModel)
                     if str(checkModel) == 'sat':
                         # solutionFound = True
@@ -337,7 +336,7 @@ if __name__ == "__main__":
     terminationTime = 300
     
     while not firstSolutionFound:
-        print("I'm here")
+        #print("I'm here")
         sleep(10)
     while(mainThread.is_alive() and perf_counter()-startingTime <= terminationTime):
         sleep(0.1)
@@ -347,18 +346,19 @@ if __name__ == "__main__":
     print(type(sol))
     mainThread.stop()
 
-    sol=[[sol[i][j] for j in range(secondDimension) if sol[i][j]!=0]for i in range(m)]
+    if sol:
+        sol=[[sol[i][j] for j in range(secondDimension) if sol[i][j]!=0]for i in range(m)]
     
     #insert of empty cells for couriers not used
     for i in deletedCouriers:
         sol.insert(i,[])
 
     if mainThread.is_alive():
-        optimal = "false"
+        optimal = False
         print("thread killed")
     else:
         terminationTime = math.floor(perf_counter() - startingTime)
-        optimal = "true"
+        optimal = True
 
     
     print(f"execution time: {terminationTime}s", )
@@ -368,17 +368,20 @@ if __name__ == "__main__":
         print("il risultato è un bel tipo del tipo: ",type(sol))
 
         jsonData = {"sat":{ 
-                "time": str(terminationTime),
+                "time": terminationTime,
                 "optimal": optimal,
-                "obj": str(int(obj)),
+                "obj": int(obj),
                 "sol": sol
             }}
     else:
-        jsonData = {"sat":{
-                "time": str(terminationTime),
+        sol=[]
+        for i in range(m):
+            sol.append([])
+        jsonData = {"smt":{
+                "time": terminationTime,
                 "optimal": optimal,
-                "obj": "-1",
-                "sol" : "None"
+                "obj": "N/A",
+                "sol" : sol
             }}
 
     saveJson(sys.argv[1],jsonData)

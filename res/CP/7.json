@@ -1,0 +1,80 @@
+{
+    "cp_domwdeg_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "183",
+        "sol": [
+            [12,10,9],
+            [15,7,11],
+            [3,17,8],
+            [4,14,16],
+            [1,2,13],
+            [6,5]
+        ]
+    },
+    "cp_domwdeg_random_gecode_no_sb_restart_luby": {
+        "time": "300",
+        "optimal": false,
+        "obj": "167",
+        "sol": [
+            [2],
+            [6,9,12],
+            [5,11],
+            [7,14,10],
+            [8,17,16,3,15],
+            [13,1,4]
+        ]
+    },
+    "cp_first_fail_chuffed_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "167",
+        "sol": [
+            [1,7,13],
+            [2,9],
+            [3,8,15],
+            [4,14,12],
+            [5,11],
+            [6,17,16,10]
+        ]
+    },
+    "cp_first_fail_chuffed_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "167",
+        "sol": [
+            [1,7,13],
+            [2,9],
+            [3,8,15],
+            [4,14,12],
+            [5,11],
+            [6,17,16,10]
+        ]
+    },
+    "cp_first_fail_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "167",
+        "sol": [
+            [9,15,10],
+            [4,12,13],
+            [17,5],
+            [14,3,7],
+            [2],
+            [11,1,8,16,6]
+        ]
+    },
+    "cp_first_fail_random_gecode_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "N/A",
+        "sol": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ]
+    }
+}

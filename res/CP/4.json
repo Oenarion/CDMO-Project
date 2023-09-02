@@ -1,0 +1,92 @@
+{
+    "cp_domwdeg_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "220",
+        "sol": [
+            [3,5,6],
+            [2],
+            [8],
+            [4],
+            [9],
+            [1],
+            [7],
+            [10]
+        ]
+    },
+    "cp_domwdeg_random_gecode_no_sb_restart_luby": {
+        "time": "300",
+        "optimal": false,
+        "obj": "220",
+        "sol": [
+            [4,2,10],
+            [5],
+            [7],
+            [3],
+            [1],
+            [6],
+            [8],
+            [9]
+        ]
+    },
+    "cp_first_fail_chuffed_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "220",
+        "sol": [
+            [1,9,10],
+            [2],
+            [3],
+            [4],
+            [5],
+            [6],
+            [7],
+            [8]
+        ]
+    },
+    "cp_first_fail_chuffed_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "220",
+        "sol": [
+            [1,9,10],
+            [2],
+            [3],
+            [4],
+            [5],
+            [6],
+            [7],
+            [8]
+        ]
+    },
+    "cp_first_fail_random_gecode_no_sb": {
+        "time": "300",
+        "optimal": false,
+        "obj": "220",
+        "sol": [
+            [5,6],
+            [3,2],
+            [10],
+            [8],
+            [1],
+            [7],
+            [9],
+            [4]
+        ]
+    },
+    "cp_first_fail_random_gecode_sb": {
+        "time": "0",
+        "optimal": true,
+        "obj": "220",
+        "sol": [
+            [3,1],
+            [4,2],
+            [5],
+            [6],
+            [7],
+            [8],
+            [9],
+            [10]
+        ]
+    }
+}
