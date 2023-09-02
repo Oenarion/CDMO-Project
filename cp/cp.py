@@ -39,7 +39,7 @@ def createJson(result):
         terminationTime = str(terminationTime) 
 
     jsonData = {"cp":{
-                "time": str(math.floor(terminationTime)),
+                "time": terminationTime.split('.')[0],
                 "optimal": optimal,
                 "obj": str(obj),
                 "sol": tour

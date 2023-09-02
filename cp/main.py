@@ -3,7 +3,7 @@ import os
 print("benvenuto nello script MINIZINC!!!")
 os.system("echo ciaoooo")
 
-for i in range(20):
+for i in range(10):
     num = i + 1
     stringa = ""
     if num<10:
@@ -11,9 +11,8 @@ for i in range(20):
     else:
         stringa = "inst" + str(num) + ".dat"
 
-    print("eseguo: python3 cp/cp.py " + stringa)
-    os.system("python3 cp/cp.py " + stringa)
-
-
-
-
+    execstr = f"python3 cp/cp.py {stringa} cp/MCP_cp_wdegRand.mzn gecode"
+    #print("eseguo: python3 cp/cp.py " + stringa + " ../cp/MCP_cp_inpOrdMin.mzn" + " gecode")
+    print("eseguo", execstr)
+    #os.system("python3 cp/cp.py " + stringa)
+    os.system(execstr)
