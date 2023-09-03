@@ -4,11 +4,11 @@ A repository for the Combinatorial Decision Making and Optimization project done
 ## How to create the docker
 Please go to the home directory of the project, then run
 ``` 
-sudo docker build . -t docker-cdmo
+sudo docker build . -t docker-cdmo-cgt
 ```
 
 ## Execute the docker
-The name of the docker is the one defined above (__docker-cdmo__).
+<!-- The name of the docker is the one defined above (__docker-cdmo__).
 Execute the image of the docker
 ```
 sudo docker run -t docker-cdmo
@@ -20,6 +20,11 @@ sudo docker ps -a
 Then enter inside the docker using the id of the docker 
 ```
 sudo docker exec -it $ID /bin/bash
+```
+-->
+To run the docker and enter inside it, type
+```
+sudo docker run -it docker-cdmo-cgt
 ```
 
 ## How to run the instances
