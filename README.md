@@ -1,5 +1,6 @@
 # CDMO-Project
-A repository for the Combinatorial Decision Making and Optimization project done during the master's degree in Artificial Intelligence
+A repository for the Combinatorial Decision Making and Optimization project done during the master's degree in Artificial Intelligence.
+
 The authors of this project are: Caroli Giacomo, Galfano Lorenzo and Torzi Luca.
 
 ## How to create the docker
