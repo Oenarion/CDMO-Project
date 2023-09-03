@@ -2,7 +2,7 @@ import json
 
 def saveJson(filename,jsonData):
 
-    directory="results/SMT/"
+    directory="res/SMT/"
     
     filename = str(filename)
 

@@ -2,7 +2,7 @@ import json
 
 def saveJson(filename,jsonData):
     
-    directory="results/MIP/"
+    directory="res/MIP/"
 
     filename = str(filename)
 

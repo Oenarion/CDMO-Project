@@ -153,7 +153,7 @@ print(fileName)
 
 #creazione del file JSON
 
-directory="results/CP/"
+directory="res/CP/"
 
 try:
     f = open(f"{directory}{fileName}.json", "w")
